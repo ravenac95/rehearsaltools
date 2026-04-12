@@ -37,10 +37,13 @@ POST /stop                   → handlers.stop
 POST /record                 → handlers.record
 POST /tempo                  → handlers.tempo
 POST /timesig                → handlers.timesig
+POST /session/new            → handlers.session_new
 POST /track/:n/mute          → handlers.track_mute
 POST /track/:n/solo          → handlers.track_solo
 POST /track/:n/volume        → handlers.track_volume
 ```
+
+Total: 10 routes.
 
 **405 Method Not Allowed detection:**
 
@@ -72,11 +75,13 @@ Tests must cover:
 - `POST /tempo` with valid body → returns 200
 - `POST /tempo` with invalid body → returns 400
 - `POST /timesig` with valid body → returns 200
+- `POST /session/new` → returns 200 with `{"ok":true}` and no body required
 - `POST /track/2/mute` → returns 200 with `"muted"` in body
 - `POST /track/2/solo` → returns 200 with `"soloed"` in body
 - `POST /track/2/volume` with valid body → returns 200
 - `GET /unknown` → 404 response
 - `GET /record` (wrong method) → 405 response
+- `GET /session/new` (wrong method for a known path) → 405 response
 - Malformed request (empty string) → 400 response
 - Handler that raises a Lua error → 500 response
 
@@ -98,7 +103,9 @@ router → json (for encoding handler return values)
 
 ## Acceptance Criteria
 - [ ] `lua tests/test_runner.lua` passes all router tests
-- [ ] All 9 API endpoints route to the correct handler
+- [ ] All 10 API endpoints route to the correct handler
+- [ ] `POST /session/new` routes to `handlers.session_new` and returns 200 with `{ok:true}`
+- [ ] `GET /session/new` (wrong method) returns 405
 - [ ] 404 returned for unknown paths
 - [ ] 405 returned for known paths with wrong method
 - [ ] 400 returned for malformed request strings
@@ -129,18 +136,23 @@ local function make_request(method, path, body)
 end
 ```
 
+The stub adapter must include a `new_project` no-op stub so the `session_new` handler can call it without error.
+
 1. **GET /status 200:** response starts with `"HTTP/1.0 200"`
 2. **POST /play 200:** body decodes to `{ok=true}`
 3. **POST /tempo valid:** `{"bpm":120}` body → 200
 4. **POST /tempo invalid:** `{"bpm":5}` body → 400, body has `"error"` key
 5. **POST /timesig valid:** `{"numerator":3,"denominator":4,"measure":1}` → 200
-6. **POST /track/2/mute:** → 200, `"muted"` key in body
-7. **POST /track/99/mute:** stub returns nil for track 99 → 404
-8. **GET /unknown:** → 404
-9. **GET /record:** (correct path, wrong method) → 405
-10. **empty request:** `router_obj.handle("")` → 400
-11. **handler error:** inject a handler that calls `error("boom")` → 500
-12. **POST /track/abc/volume:** → 400 (invalid track number)
+6. **POST /session/new no body:** `make_request("POST", "/session/new")` → 200, body decodes to `{ok=true}`
+7. **POST /session/new with body:** arbitrary JSON body → still 200 (body ignored)
+8. **GET /session/new wrong method:** → 405
+9. **POST /track/2/mute:** → 200, `"muted"` key in body
+10. **POST /track/99/mute:** stub returns nil for track 99 → 404
+11. **GET /unknown:** → 404
+12. **GET /record:** (correct path, wrong method) → 405
+13. **empty request:** `router_obj.handle("")` → 400
+14. **handler error:** inject a handler that calls `error("boom")` → 500
+15. **POST /track/abc/volume:** → 400 (invalid track number)
 
 ### TDD Process
 1. Write all tests with raw request strings — FAIL (RED) since `src/router.lua` doesn't exist

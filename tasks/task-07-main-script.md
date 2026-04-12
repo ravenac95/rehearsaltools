@@ -89,11 +89,13 @@ local function main_loop()
   local client, err = server:accept()
   if client then
     client:settimeout(0.05)  -- short blocking read timeout (50ms max)
-    local request_data, recv_err = client:receive("*a")
+    local data, recv_err, partial = client:receive("*a")
     -- "receive *a" reads until connection closes or timeout
-    -- For HTTP/1.0 clients that close after sending, this works correctly
-    -- Fallback: if timeout, use whatever was received
-    if request_data and #request_data > 0 then
+    -- Partial data fallback: for POST bodies sent before connection close,
+    -- LuaSocket may return nil + "timeout" + partial string.
+    -- All realistic API payloads are < 4KB on a local network.
+    local request_data = data or partial or ""
+    if #request_data > 0 then
       local response = rt.handle(request_data)
       client:send(response)
     end
@@ -109,20 +111,9 @@ reaper.defer(main_loop)
 
 **Section 8: Cleanup on script termination**
 
-REAPER does not have a guaranteed script teardown hook, but wrapping the defer registration in a way that allows the server socket to be closed when the script is unloaded is best-effort. Document in a comment that to stop the server, the user removes the script from the action list or uses the REAPER script manager to terminate it. The server socket will be garbage-collected when the Lua VM is torn down.
+REAPER does not have a guaranteed script teardown hook. Document in a comment that to stop the server, the user removes the script from the action list or uses the REAPER script manager to terminate it. The server socket will be garbage-collected when the Lua VM is torn down.
 
-### 7.2 `receive("*a")` and partial reads
-
-`socket:receive("*a")` with a short timeout reads as much data as arrives before the timeout. For the POST bodies in this API (< 4KB), this is reliable on a local network. Document this limitation in a comment in the source.
-
-For robustness, if `receive` returns `nil` and the error is `"timeout"` but a partial string was also returned (LuaSocket returns partial data as a second value on timeout), use the partial string:
-
-```lua
-local data, err, partial = client:receive("*a")
-request_data = data or partial or ""
-```
-
-### 7.3 Console logging
+### 7.2 Console logging
 
 Add a small utility at the top of the script for consistent logging:
 
@@ -136,11 +127,11 @@ Use `log()` for:
 - Startup confirmation (address and port)
 - Any `pcall`-caught errors from the server accept loop (log and continue — don't crash)
 
-### 7.4 No automated tests for this file
+### 7.3 No automated tests for this file
 
 `reaper_http_remote.lua` cannot be run by the test harness because it calls `reaper.*` APIs directly (outside the adapter). It is tested by manual integration testing inside REAPER (see Acceptance Criteria). The modules it calls (router, handlers, adapter, HTTP, JSON) are all covered by automated tests in prior tasks.
 
-### 7.5 README update
+### 7.4 README update
 
 Update `README.md` with:
 1. **What it does** — brief description
@@ -149,10 +140,11 @@ Update `README.md` with:
    - Copy `reaper_http_remote.lua` and the `src/` directory to REAPER's Scripts directory
    - Add the script as a REAPER Action (Actions → Load ReaScript)
    - Run the action — it starts the HTTP server
-3. **API reference** — table of all endpoints (method, path, description)
+3. **API reference** — table of all 10 endpoints (method, path, description), including `POST /session/new`
 4. **Default port** — 8765, note it is configurable at the top of the script
 5. **Running tests** — `lua tests/test_runner.lua` (requires Lua 5.4 installed)
 6. **Stopping the server** — terminate the script from REAPER's script manager or action list
+7. **Session warning** — note that `POST /session/new` will discard the current project and that REAPER may show a native "save changes?" dialog
 
 ## File Locations
 - `reaper_http_remote.lua` — main script (repo root)
@@ -166,12 +158,13 @@ Update `README.md` with:
 - [ ] `curl -X POST http://localhost:8765/stop` stops transport
 - [ ] `curl -X POST -H "Content-Type: application/json" -d '{"bpm":140}' http://localhost:8765/tempo` changes the project BPM to 140
 - [ ] `curl -X POST -H "Content-Type: application/json" -d '{"numerator":3,"denominator":4,"measure":5}' http://localhost:8765/timesig` inserts a 3/4 time signature marker at measure 5
+- [ ] `curl -X POST http://localhost:8765/session/new` opens a new empty REAPER project (REAPER may prompt to save)
 - [ ] `curl -X POST http://localhost:8765/track/1/mute` toggles mute on track 1
 - [ ] Unknown routes return 404 JSON
 - [ ] If mavriq-lua-sockets is not installed, the script shows a clear error in the REAPER console and does not crash REAPER
 - [ ] Script survives REAPER continuing to run after script termination (no process-level crash)
 - [ ] `lua tests/test_runner.lua` still passes all automated tests (no regressions from README or script changes)
-- [ ] README clearly documents all endpoints, installation steps, and test command
+- [ ] README clearly documents all 10 endpoints, installation steps, test command, and session/new warning
 
 ## TDD Mode
 
@@ -187,4 +180,5 @@ Manual integration test sequence (document in a checklist comment at the bottom 
 6. Run `curl -X POST http://localhost:8765/stop` — REAPER stops
 7. Run `curl -X POST -d '{"bpm":140}' http://localhost:8765/tempo` — BPM changes
 8. Run `curl -X POST -d '{"numerator":3,"denominator":4,"measure":5}' http://localhost:8765/timesig` — timesig marker inserted
-9. Run `curl -X POST http://localhost:8765/track/1/mute` twice — mute toggles on, then off
+9. Run `curl -X POST http://localhost:8765/session/new` — new empty project opens (save dialog may appear)
+10. Run `curl -X POST http://localhost:8765/track/1/mute` twice — mute toggles on, then off

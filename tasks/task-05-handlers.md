@@ -68,6 +68,17 @@ Logic:
 4. Call `adapter.update_timeline()`
 5. Return `200, {ok = true, numerator = validated.numerator, denominator = validated.denominator, measure = validated.measure}`
 
+**`handlers.session_new(request, adapter)`**
+
+Opens a new empty REAPER project, replacing the current session.
+
+Logic:
+1. Call `validators.validate_session_new(decoded_body)` — always succeeds, but keeps the pattern consistent. Decode the body with JSON if present (non-empty body string); if the body is empty or the decode fails, pass `nil` to the validator (the validator accepts nil).
+2. Call `adapter.new_project()`
+3. Return `200, {ok = true}`
+
+No body decoding failure should ever produce a 400 here — a missing or unparseable body is treated the same as an empty body (nil is passed to the validator, which always accepts it).
+
 **`handlers.track_mute(request, adapter, params)`**
 
 `params` is the route match table, e.g. `{n = "2"}`.
@@ -113,6 +124,7 @@ Default stub return values:
 - `get_track_solo()` → false
 - `get_track_volume()` → 1.0
 - All action/set functions → nil (no-op)
+- `new_project()` → nil (no-op)
 
 Tests must cover:
 
@@ -138,6 +150,12 @@ Tests must cover:
 - Invalid denominator (3) → 400
 - `update_timeline` is called after set
 
+**session_new handler:**
+- Returns `200, {ok=true}`
+- `adapter.new_project()` is called exactly once (use a spy)
+- Empty body (no JSON) → still succeeds (returns 200)
+- Body with arbitrary JSON → still succeeds (body is ignored)
+
 **track_mute handler:**
 - Track 2, currently unmuted → toggles to muted, response `{muted=true}`
 - Track 2, currently muted → toggles to unmuted
@@ -161,6 +179,8 @@ Tests must cover:
 - [ ] `lua tests/test_runner.lua` passes all handler tests
 - [ ] All handlers return `(status_code, table)` pairs — never string responses
 - [ ] No handler calls `reaper.*` directly
+- [ ] `session_new` calls `adapter.new_project()` and returns `200, {ok=true}`
+- [ ] `session_new` does not return 400 for a missing or unparseable body
 - [ ] Mute and solo are toggled (not set to a fixed value)
 - [ ] All validation errors produce 400 responses with `{error: "..."}` bodies
 - [ ] Track-not-found produces 404
@@ -191,14 +211,17 @@ This task uses Test-Driven Development. Write tests BEFORE implementation.
 9. **tempo out of range:** `400, {error=...}` (error from validator)
 10. **timesig valid:** `200, {ok=true, numerator=3, denominator=4, measure=5}`
 11. **timesig bad denom:** `400`
-12. **track_mute toggle off→on:** response `{muted=true}`
-13. **track_mute toggle on→off:** response `{muted=false}`
-14. **track_mute bad track string:** `400`
-15. **track_mute nil track:** `404`
-16. **track_volume valid:** `200, {ok=true, volume=0.5}`
-17. **track_volume out of range:** `400`
+12. **session_new ok:** `200, {ok=true}` — `new_project` spy confirms it was called
+13. **session_new empty body:** no body → `200, {ok=true}` (not 400)
+14. **session_new ignored body:** `{"foo":"bar"}` body → `200, {ok=true}`
+15. **track_mute toggle off→on:** response `{muted=true}`
+16. **track_mute toggle on→off:** response `{muted=false}`
+17. **track_mute bad track string:** `400`
+18. **track_mute nil track:** `404`
+19. **track_volume valid:** `200, {ok=true, volume=0.5}`
+20. **track_volume out of range:** `400`
 
 ### TDD Process
-1. Write `make_stub_adapter()` helper and all tests — FAIL (RED)
+1. Write `make_stub_adapter()` helper (including `new_project` stub) and all tests — FAIL (RED)
 2. Implement `src/handlers.lua` until all tests pass (GREEN)
 3. Run full test suite — all prior tests still pass

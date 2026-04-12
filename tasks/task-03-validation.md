@@ -72,6 +72,12 @@ Validates the `:n` path parameter for all `/track/:n/*` endpoints.
 - Returns `ok = true, n_integer` on success
 - Returns `ok = false, "track number must be a positive integer"` on failure
 
+**`validators.validate_session_new(body)`**
+
+Validates a `POST /session/new` body. This endpoint accepts no meaningful body — the body is always valid (ignored). This validator exists so the handler layer has a consistent validation call pattern.
+
+- Always returns `true, {}` regardless of the input value (including nil)
+
 **`validators.is_power_of_two(n)`**
 
 Internal helper (also exported for testing): returns `true` if `n` is an integer and a power of 2 in the valid set {1, 2, 4, 8, 16, 32, 64}, `false` otherwise.
@@ -93,6 +99,7 @@ Write tests before implementing. Tests must cover every validator and every erro
 - [ ] All validators return exact error strings as specified (tests check string values)
 - [ ] `validate_timesig` correctly rejects denominators that are not powers of 2 (e.g., 3, 5, 6, 7)
 - [ ] `validate_track_number` rejects 0, negative numbers, floats, and non-numeric strings
+- [ ] `validate_session_new` always returns `true, {}` for any input including nil
 - [ ] Module has no dependency on REAPER APIs
 - [ ] All prior task tests still pass
 
@@ -145,14 +152,19 @@ This task uses Test-Driven Development. Write tests BEFORE implementation.
 28. `"abc"` → fail
 29. `"1.5"` → fail (not integer)
 
+**validate_session_new:**
+30. `nil` → ok, `{}`
+31. `{}` → ok, `{}`
+32. `{anything = "ignored"}` → ok, `{}`
+
 **is_power_of_two:**
-30. 1, 2, 4, 8, 16, 32, 64 → all true
-31. 3, 5, 6, 7, 12, 100 → all false
-32. 0, -1 → false
+33. 1, 2, 4, 8, 16, 32, 64 → all true
+34. 3, 5, 6, 7, 12, 100 → all false
+35. 0, -1 → false
 
 **is_integer:**
-33. 1, 42, 0 → true
-34. 1.5, 0.1 → false
+36. 1, 42, 0 → true
+37. 1.5, 0.1 → false
 
 ### TDD Process
 1. Write all tests in `tests/test_validation.lua` — they FAIL (RED)

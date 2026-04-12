@@ -8,7 +8,7 @@ This directory contains the implementation plan for the REAPER HTTP Remote Contr
 
 ## Summary
 
-A self-contained Lua ReaScript for REAPER that embeds a non-blocking HTTP/1.0 server, exposing a REST/JSON API for remote transport control, time signature scheduling, tempo changes, and per-track mixing over a local network.
+A self-contained Lua ReaScript for REAPER that embeds a non-blocking HTTP/1.0 server, exposing a REST/JSON API for remote transport control, time signature scheduling, tempo changes, per-track mixing, and session management over a local network.
 
 **Language:** Lua (REAPER's embedded Lua 5.4)
 **Networking:** mavriq-lua-sockets (LuaSocket-compatible, installed via ReaPack)
@@ -69,7 +69,7 @@ rehearsaltools/
     ├── test_validation.lua           # Validation tests (Task 3)
     ├── test_reaper_adapter.lua       # Adapter tests (Task 4)
     ├── test_handlers.lua             # Handler tests (Task 5)
-    └── test_router.lua              # Router integration tests (Task 6)
+    └── test_router.lua               # Router integration tests (Task 6)
 ```
 
 ---
@@ -84,6 +84,7 @@ rehearsaltools/
 | POST | /record | Toggle record |
 | POST | /tempo | Set BPM (`{"bpm": 140}`) |
 | POST | /timesig | Schedule time sig change (`{"numerator":3,"denominator":4,"measure":5}`) |
+| POST | /session/new | Open a new empty REAPER project (discards current session) |
 | POST | /track/:n/mute | Toggle mute on track n (1-indexed) |
 | POST | /track/:n/solo | Toggle solo on track n (1-indexed) |
 | POST | /track/:n/volume | Set track volume (`{"volume": 0.75}`, 0.0–2.0 linear) |

@@ -99,7 +99,7 @@ Write tests before implementing. Tests must cover:
 ## Acceptance Criteria
 - [ ] `lua tests/test_runner.lua` passes all HTTP tests
 - [ ] `http.parse_request` correctly handles all request formats used by the API
-- [ ] `http.route` correctly matches all 9 API endpoints including `/track/:n/mute`, `/track/:n/solo`, `/track/:n/volume`
+- [ ] `http.route` correctly matches all 10 API endpoints including `/session/new`, `/track/:n/mute`, `/track/:n/solo`, `/track/:n/volume`
 - [ ] `http.build_response` produces syntactically valid HTTP/1.0 responses
 - [ ] Module has no dependency on REAPER APIs or socket libraries
 - [ ] Existing Task 1 tests still pass

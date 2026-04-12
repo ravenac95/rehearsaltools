@@ -48,6 +48,7 @@ The adapter table must expose the following functions:
 **Project:**
 
 - `adapter.update_arrange()` → nil (wraps `reaper.UpdateArrange()` — call after track changes to refresh the arrange view)
+- `adapter.new_project()` → nil (wraps `reaper.Main_openProject("")` — opens a new empty project, replacing the current session; REAPER may prompt the user to save if the existing project has unsaved changes)
 
 ### 4.2 Module factory pattern
 
@@ -78,6 +79,7 @@ Since the adapter is a thin wrapper, tests focus on:
 2. Verifying mute/solo value encoding (boolean → 0/1)
 3. Verifying `set_timesig_at_measure` passes `measure - 1` as the measurepos argument
 4. Verifying `update_timeline` and `update_arrange` are called where expected
+5. Verifying `new_project` calls `Main_openProject` with an empty string argument
 
 Tests use a stub `reaper` table with spy functions that record their call arguments.
 
@@ -89,6 +91,9 @@ local stub_reaper = {
   GetTrack = function(proj, idx)
     table.insert(calls, {fn="GetTrack", proj=proj, idx=idx})
     return "track_handle_" .. idx
+  end,
+  Main_openProject = function(path)
+    table.insert(calls, {fn="Main_openProject", path=path})
   end,
   -- etc.
 }
@@ -106,6 +111,7 @@ Then assert that `calls[1].idx == 1` when `adapter.get_track(2)` is called (2 �
 - [ ] `set_timesig_at_measure(3, 4, 5)` calls `SetTempoTimeSigMarker` with measurepos=4
 - [ ] `set_track_mute(track, true)` calls `SetMediaTrackInfo_Value` with value `1`
 - [ ] `set_track_solo(track, false)` calls `SetMediaTrackInfo_Value` with value `0`
+- [ ] `new_project()` calls `reaper.Main_openProject("")` with exactly an empty string
 - [ ] Module does NOT call any `reaper.*` global directly — only through `reaper_global` parameter
 - [ ] All prior task tests still pass
 
@@ -133,6 +139,7 @@ This task uses Test-Driven Development. Write tests BEFORE implementation.
 10. **action_play:** calls `Main_OnCommand(1007, 0)`
 11. **action_stop:** calls `Main_OnCommand(1016, 0)`
 12. **action_record:** calls `Main_OnCommand(1013, 0)`
+13. **new_project:** calls `Main_openProject("")` — argument is exactly `""`
 
 ### TDD Process
 1. Write stub pattern and all tests in `tests/test_reaper_adapter.lua` — FAIL (RED)
