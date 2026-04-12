@@ -13,7 +13,7 @@
 - [x] task-01-test-harness-and-json — done
 - [x] task-02-http-parser — done
 - [x] task-03-validation — done
-- [ ] task-04-reaper-adapter — pending
+- [x] task-04-reaper-adapter — done
 - [ ] task-05-handlers — pending
 - [ ] task-06-router — pending
 - [ ] task-07-main-script — pending
