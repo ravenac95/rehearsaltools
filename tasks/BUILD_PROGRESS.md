@@ -11,7 +11,7 @@
 
 ## Tasks
 - [x] task-01-test-harness-and-json — done
-- [ ] task-02-http-parser — pending
+- [x] task-02-http-parser — done
 - [ ] task-03-validation — pending
 - [ ] task-04-reaper-adapter — pending
 - [ ] task-05-handlers — pending
