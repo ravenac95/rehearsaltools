@@ -15,7 +15,7 @@
 - [x] task-03-validation — done
 - [x] task-04-reaper-adapter — done
 - [x] task-05-handlers — done
-- [ ] task-06-router — pending
+- [x] task-06-router — done
 - [ ] task-07-main-script — pending
 
 ## Notes
