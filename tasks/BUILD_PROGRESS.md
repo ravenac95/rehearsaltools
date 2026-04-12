@@ -14,7 +14,7 @@
 - [x] task-02-http-parser — done
 - [x] task-03-validation — done
 - [x] task-04-reaper-adapter — done
-- [ ] task-05-handlers — pending
+- [x] task-05-handlers — done
 - [ ] task-06-router — pending
 - [ ] task-07-main-script — pending
 
