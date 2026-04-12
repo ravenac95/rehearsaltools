@@ -10,7 +10,7 @@
 - TASK_REVIEW: approved
 
 ## Tasks
-- [ ] task-01-test-harness-and-json — pending
+- [x] task-01-test-harness-and-json — done
 - [ ] task-02-http-parser — pending
 - [ ] task-03-validation — pending
 - [ ] task-04-reaper-adapter — pending
