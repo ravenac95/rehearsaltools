@@ -1,6 +1,6 @@
 # Build Progress
 
-## Status: IMPLEMENTING
+## Status: COMPLETE
 
 ## Pipeline State
 - BRAINSTORM: skipped
@@ -16,7 +16,7 @@
 - [x] task-04-reaper-adapter — done
 - [x] task-05-handlers — done
 - [x] task-06-router — done
-- [ ] task-07-main-script — pending
+- [x] task-07-main-script — done
 
 ## Notes
 User approved plan with POST /session/new endpoint added. Starting implementation.
