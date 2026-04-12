@@ -68,11 +68,6 @@ Tests must cover:
 - Decode: string escapes (`\"`, `\\`, `\n`, `\t`, `\uXXXX`)
 - Round-trip: `encode(decode(s))` and `decode(encode(t))` for representative values
 
-## File Locations
-- `tests/test_runner.lua` — test harness (entry point)
-- `src/json.lua` — JSON module
-- `tests/test_json.lua` — JSON tests
-
 ## Acceptance Criteria
 - [ ] `lua tests/test_runner.lua` runs from the repo root without error
 - [ ] All JSON tests pass

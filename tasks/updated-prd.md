@@ -8,7 +8,7 @@
 
 ## Overview
 
-A self-contained Lua ReaScript for REAPER that embeds a non-blocking HTTP server, exposing a REST/JSON API for remote transport control, time signature scheduling, tempo changes, and per-track mixing. The primary use case is live rehearsal control from a phone or tablet on the same local network.
+A self-contained Lua ReaScript for REAPER that embeds a non-blocking HTTP server, exposing a REST/JSON API for remote transport control, time signature scheduling, tempo changes, per-track mixing, and session management. The primary use case is live rehearsal control from a phone or tablet on the same local network.
 
 ---
 
@@ -101,6 +101,16 @@ Schedules a time signature change at a specific measure number.
 
 **Implementation note:** Uses `reaper.SetTempoTimeSigMarker(0, -1, -1, measure-1, -1, -1, numerator, denominator, false)` — ptidx=-1 inserts a new marker, measurepos is 0-indexed.
 
+### POST /session/new
+Opens a new empty REAPER project, replacing the current session.
+
+**Request body:** none (body is ignored if present)
+**Response:** `{"ok": true}`
+
+**Implementation note:** Uses `reaper.Main_openProject("")` — passing an empty string causes REAPER to open a new empty project. This is equivalent to the REAPER action 40023 ("File: New project"). The call is synchronous from the Lua side; REAPER will prompt the user to save the existing project if it has unsaved changes (standard REAPER behavior — this is not suppressed).
+
+**Side effects:** Any existing project state (tracks, markers, tempo map, etc.) is replaced by the new empty project. This is intentional and expected.
+
 ### POST /track/:n/mute
 Toggles mute on track `n` (1-indexed).
 
@@ -138,12 +148,20 @@ HTTP status codes used:
 rehearsaltools/
 ├── README.md
 ├── reaper_http_remote.lua        # Main script (the ReaScript)
-├── tests/
-│   ├── test_runner.lua           # Lightweight test harness
-│   ├── test_http.lua             # Tests for HTTP parsing/routing/response
-│   ├── test_json.lua             # Tests for JSON encode/decode
-│   ├── test_validation.lua       # Tests for request validation logic
-│   └── test_handlers.lua         # Tests for handler logic (REAPER API stubbed)
+├── src/
+│   ├── json.lua                  # JSON encode/decode
+│   ├── http.lua                  # HTTP parser + response builder
+│   ├── validation.lua            # Request validation
+│   ├── reaper_api.lua            # REAPER API adapter
+│   ├── handlers.lua              # Endpoint handler functions
+│   └── router.lua                # Route table + dispatch
+└── tests/
+    ├── test_runner.lua           # Lightweight test harness
+    ├── test_http.lua             # Tests for HTTP parsing/routing/response
+    ├── test_json.lua             # Tests for JSON encode/decode
+    ├── test_validation.lua       # Tests for request validation logic
+    ├── test_reaper_adapter.lua   # Tests for REAPER adapter (stubbed)
+    └── test_handlers.lua         # Tests for handler logic (REAPER API stubbed)
 ```
 
 The main script (`reaper_http_remote.lua`) is structured as a set of pure modules (HTTP, JSON, routing, handlers, validation) followed by a thin REAPER-integration section that wires everything together and starts the defer loop. The modules are written so they can be `require`'d by the test harness without REAPER being present.
@@ -164,6 +182,8 @@ The main script (`reaper_http_remote.lua`) is structured as a set of pure module
 
 6. **Denominator validation:** REAPER only accepts power-of-2 denominators for time signatures. Invalid denominators return 400.
 
+7. **POST /session/new user prompt:** `reaper.Main_openProject("")` will trigger REAPER's native "save changes?" dialog if the current project has unsaved changes. This is standard REAPER behavior and is not suppressed by the API. The HTTP response is returned after the call regardless of what the user does in the dialog. Callers should be aware of this interaction.
+
 ---
 
 ## Out of Scope (v1)
@@ -174,3 +194,4 @@ The main script (`reaper_http_remote.lua`) is structured as a set of pure module
 - MIDI over HTTP
 - OSC protocol support
 - ReaPack distribution packaging
+- Suppressing the "save changes?" dialog on session/new
