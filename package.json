@@ -1,0 +1,13 @@
+{
+  "name": "rehearsaltools",
+  "private": true,
+  "version": "0.1.0",
+  "description": "OSC-based REAPER rehearsal control surface",
+  "scripts": {
+    "dev": "pnpm --parallel -r --filter=server --filter=web dev",
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "start": "pnpm --filter=server start"
+  },
+  "packageManager": "pnpm@10.33.0"
+}

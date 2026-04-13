@@ -1,0 +1,33 @@
+# RehearsalTools.ReaperOSC
+#
+# Import this file into REAPER via Preferences → Control / OSC / web → Add
+# and pick a Control Surface of type "OSC (Open Sound Control)".
+# Point the "device" at the Node service's OSC listener (default 127.0.0.1:9100
+# inbound to REAPER, 9101 outbound from REAPER).
+#
+# Only the endpoints used by RehearsalTools are listed. The custom /rt/*
+# endpoints are NOT routed through this file — they are handled by the
+# reaper_osc_dispatcher.lua ReaScript over a separate UDP socket.
+
+# Transport
+PLAY                    t/play
+STOP                    t/stop
+RECORD                  t/record
+
+# Click / metronome
+METRONOME               t/metronome t/click
+
+# Tempo & time signature (live, no markers)
+TEMPO_RAW               n/tempo/raw
+
+# Seek (seconds from project start)
+TIME                    n/time
+
+# Status feedback back to the server (REAPER → server on this path)
+PLAY_STATE              b/playing
+RECORD_STATE            b/recording
+STOP_STATE              b/stopped
+TEMPO                   n/tempo
+BEAT                    n/beat
+TIMESIG_NUMERATOR       n/timesig_num
+TIMESIG_DENOMINATOR     n/timesig_denom
