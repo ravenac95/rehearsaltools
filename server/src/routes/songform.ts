@@ -3,21 +3,23 @@
 
 import type { FastifyInstance } from "fastify";
 import type { SectionsStore } from "../store/sections.js";
-import type { DispatcherClient } from "../osc/commands.js";
+import type { RtClient } from "../osc/client.js";
+import type { WebRemoteClient } from "../reaper/web-remote.js";
 import type { AppState } from "../state.js";
 import type { WsHub } from "../ws.js";
 import { flattenSongForm, totalBars } from "../store/sections.js";
 
 interface Deps {
   store: SectionsStore;
-  dispatcher: DispatcherClient;
+  rt: RtClient;
+  webRemote: WebRemoteClient;
   state: AppState;
   ws: WsHub;
 }
 
 export default function songformRoutes(deps: Deps) {
   return async function (app: FastifyInstance) {
-    const { store, dispatcher, state, ws } = deps;
+    const { store, rt, webRemote, state, ws } = deps;
 
     app.get("/api/songform", async () => {
       const form = store.getSongForm();
@@ -47,9 +49,9 @@ export default function songformRoutes(deps: Deps) {
     );
 
     /**
-     * Flatten the current song form and send it to REAPER via the dispatcher.
-     * Server remembers the resulting region as the "current take" and
-     * broadcasts a websocket event.
+     * Flatten the current song form and send it to REAPER via /rt/songform/write.
+     * The server pre-computes startTime from the current transport position,
+     * stores the resulting take, and broadcasts a websocket event.
      */
     app.post<{ Body: { regionName?: string } }>(
       "/api/songform/write",
@@ -65,23 +67,19 @@ export default function songformRoutes(deps: Deps) {
         }
         const regionName = req.body?.regionName?.trim() || undefined;
 
-        const result = await dispatcher.request<{
-          regionId: number;
-          startTime: number;
-          rows: Array<{ time: number; bpm: number; num: number; denom: number }>;
-        }>("/rt/songform/write", { regionName, rows });
+        // Pre-compute startTime from the current transport position.
+        const transport = await webRemote.getTransport();
+        const startTime = transport.positionSeconds;
 
-        state.setTake({ regionId: result.regionId, startTime: result.startTime });
+        await rt.send("/rt/songform/write", { regionName, rows, startTime });
+
+        state.setTake({ startTime });
         ws.broadcast({
           type: "songform:written",
-          data: {
-            regionId:  result.regionId,
-            startTime: result.startTime,
-            regionName,
-          },
+          data: { startTime, regionName },
         });
 
-        return { ok: true, ...result };
+        return { ok: true, startTime };
       },
     );
   };
