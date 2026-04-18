@@ -129,13 +129,13 @@ export function Sections() {
       {sections.map((s) => {
         const totalBars = s.rows.reduce((a, r) => a + r.bars, 0);
         return (
-          <div key={s.id} className="card" onClick={() => startEdit(s)}
-            style={{ cursor: "pointer" }}>
+          <button key={s.id} className="card" onClick={() => startEdit(s)}
+            style={{ cursor: "pointer", width: "100%", textAlign: "left", border: "none", font: "inherit", color: "inherit" }}>
             <strong>{s.name}</strong>
             <div className="muted">
               {s.rows.length} row{s.rows.length !== 1 ? "s" : ""} · {totalBars} bars
             </div>
-          </div>
+          </button>
         );
       })}
       <div className="spacer" />

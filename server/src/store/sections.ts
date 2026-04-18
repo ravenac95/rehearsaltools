@@ -108,11 +108,16 @@ export class SectionsStore {
 
   listSections(): Section[] {
     this.ensureLoaded();
-    return this.data.sections.map((s) => ({ ...s, rows: [...s.rows] }));
+    return this.data.sections.map((s) => ({
+      ...s,
+      rows: s.rows.map((r) => ({ ...r })),
+    }));
   }
 
   getSection(id: string): Section | undefined {
-    return this.data.sections.find((s) => s.id === id);
+    const s = this.data.sections.find((x) => x.id === id);
+    if (!s) return undefined;
+    return { ...s, rows: s.rows.map((r) => ({ ...r })) };
   }
 
   async createSection(name: string, rows: SectionRow[]): Promise<Section> {

@@ -123,10 +123,13 @@ input[type="number"] { width: 96px; }
   background: #2a2a30;
   color: #fff;
   border-radius: 999px;
+  border: none;
   margin: 4px;
   font-weight: 600;
   font-size: 16px;
+  font-family: inherit;
   cursor: pointer;
+  min-height: 44px;
 }
 .chip.empty { color: #888; }
 

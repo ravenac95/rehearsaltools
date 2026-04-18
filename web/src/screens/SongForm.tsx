@@ -60,10 +60,10 @@ export function SongForm() {
             songForm.sectionIds.map((id, i) => {
               const s = byId[id];
               return (
-                <span key={i} className="chip" onClick={() => remove(i)}
+                <button key={i} className="chip" onClick={() => remove(i)}
                   title="Tap to remove">
                   {s ? s.name : "?"} ×
-                </span>
+                </button>
               );
             })
           )}
@@ -85,9 +85,9 @@ export function SongForm() {
             <span className="muted">Create sections first.</span>
           )}
           {sections.map((s) => (
-            <span key={s.id} className="chip" onClick={() => append(s.id)}>
+            <button key={s.id} className="chip" onClick={() => append(s.id)}>
               + {s.name}
-            </span>
+            </button>
           ))}
         </div>
       </div>

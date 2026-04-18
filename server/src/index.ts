@@ -39,7 +39,7 @@ async function main() {
   const dispatcher    = new DispatcherClient(dispatcherOsc);
   const reaper        = new ReaperNativeClient(reaperOsc);
 
-  // ── OSC in ────────────────────────────────────────────────────────────────
+  // ── OSC in: dispatcher replies + events ─────────────────────────────────
   const dispatcherReplies = new OscServerWrapper(config.replyPort, config.replyHost, {
     onReply: (reqId, payload) => dispatcher.handleReply(reqId, payload),
     onEvent: (topic, payload) => {
@@ -56,11 +56,16 @@ async function main() {
         console.error("bad event payload:", err);
       }
     },
-    onNative: (address, args) => {
-      // Native REAPER feedback (e.g. /beat, /playing). Forward opaquely.
-      ws.broadcast({ type: "reaper-native", data: { address, args } });
-    },
   });
+
+  // ── OSC in: native REAPER feedback ─────────────────────────────────────
+  const reaperFeedback = new OscServerWrapper(
+    config.reaperFeedbackPort, config.reaperFeedbackHost, {
+      onNative: (address, args) => {
+        ws.broadcast({ type: "reaper-native", data: { address, args } });
+      },
+    },
+  );
 
   // ── Fastify app ───────────────────────────────────────────────────────────
   const app = Fastify({ logger: { level: "info" } });
@@ -107,11 +112,13 @@ async function main() {
   app.log.info(`REAPER dispatcher → udp://${config.dispatcherHost}:${config.dispatcherPort}`);
   app.log.info(`REAPER native OSC → udp://${config.reaperOscHost}:${config.reaperOscPort}`);
   app.log.info(`Listening for OSC replies on udp://${config.replyHost}:${config.replyPort}`);
+  app.log.info(`Listening for REAPER feedback on udp://${config.reaperFeedbackHost}:${config.reaperFeedbackPort}`);
 
   // ── Shutdown ──────────────────────────────────────────────────────────────
   const shutdown = async () => {
     app.log.info("shutting down…");
     dispatcherReplies.close();
+    reaperFeedback.close();
     await dispatcherOsc.close();
     await reaperOsc.close();
     await app.close();
