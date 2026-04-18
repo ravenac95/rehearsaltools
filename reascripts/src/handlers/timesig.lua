@@ -3,7 +3,10 @@
 -- When body.measure is nil, inserts at the current playhead; otherwise inserts
 -- at the given 1-indexed measure boundary.
 
-local validation = dofile("src/validation.lua")
+local script_dir = (reaper and reaper.get_action_context)
+  and ({reaper.get_action_context()})[2]:match("^(.*[\\/])")
+  or ""
+local validation = dofile(script_dir .. "src/validation.lua")
 
 local M = {}
 

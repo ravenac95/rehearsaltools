@@ -2,7 +2,10 @@
 -- Handler for /rt/tempo (only used for non-realtime tempo changes; realtime
 -- tempo uses REAPER's native /tempo/raw OSC path).
 
-local validation = dofile("src/validation.lua")
+local script_dir = (reaper and reaper.get_action_context)
+  and ({reaper.get_action_context()})[2]:match("^(.*[\\/])")
+  or ""
+local validation = dofile(script_dir .. "src/validation.lua")
 
 local M = {}
 

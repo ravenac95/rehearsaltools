@@ -5,7 +5,10 @@
 -- an open-ended region covering the take. The last marker is NOT terminated —
 -- it continues ad infinitum so recording can run past the programmed length.
 
-local validation = dofile("src/validation.lua")
+local script_dir = (reaper and reaper.get_action_context)
+  and ({reaper.get_action_context()})[2]:match("^(.*[\\/])")
+  or ""
+local validation = dofile(script_dir .. "src/validation.lua")
 
 local M = {}
 
