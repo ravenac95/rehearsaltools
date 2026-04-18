@@ -1,9 +1,6 @@
 // server/src/osc/client.ts
-// Thin wrapper over node-osc Client for the two outbound UDP channels:
-//   1. REAPER native OSC  (/play, /stop, /tempo/raw, /time, /click)
-//   2. Custom dispatcher  (/rt/*)
-//
-// The wrapper exposes typed helpers and a single `send()` for raw messages.
+// Thin wrapper over node-osc Client for REAPER's OSC port.
+// ReaperNativeClient sends transport controls; RtClient sends /rt/* action payloads.
 
 import { Client } from "node-osc";
 

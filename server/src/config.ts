@@ -51,7 +51,7 @@ export function loadConfig(): Config {
     reaperFeedbackPort:  intEnv("REAPER_FEEDBACK_PORT", 8001),
 
     reaperWebHost:       strEnv("REAPER_WEB_HOST",      "127.0.0.1"),
-    reaperWebPort:       intEnv("REAPER_WEB_PORT",      8080),
+    reaperWebPort:       intEnv("REAPER_WEB_PORT",      8081),
 
     dataFile:            strEnv("DATA_FILE",            "./data/rehearsaltools.json"),
   };

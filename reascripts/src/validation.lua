@@ -1,5 +1,5 @@
 -- src/validation.lua
--- Pure-Lua validation for OSC dispatcher payloads.
+-- Pure-Lua validation for OSC action payloads.
 -- No dependency on REAPER APIs.
 
 local M = {}

@@ -60,10 +60,19 @@ describe("GET /api/regions", () => {
 describe("POST /api/regions", () => {
   it("fires rt.send and returns highest-id region", async () => {
     const stubs = makeStubs();
-    // Set up webRemote to return a new region (simulates REAPER side-effect)
-    stubs.webRemote.listRegions = async () => [
-      { id: 5, name: "intro", start: 0, stop: 60, color: 0 },
-    ];
+    // First listRegions call (pre-send snapshot) returns existing regions;
+    // subsequent calls include the newly-created region.
+    let callCount = 0;
+    stubs.webRemote.listRegions = async () => {
+      callCount++;
+      if (callCount === 1) {
+        return [{ id: 2, name: "existing", start: 0, stop: 30, color: 0 }];
+      }
+      return [
+        { id: 2, name: "existing", start: 0, stop: 30, color: 0 },
+        { id: 5, name: "intro", start: 0, stop: 60, color: 0 },
+      ];
+    };
     const app = await buildApp(stubs);
 
     const res = await app.inject({

@@ -21,9 +21,9 @@ describe("store applyWsMessage", () => {
     useStore.setState({ refreshRegions: async () => {} });
     useStore.getState().applyWsMessage({
       type: "songform:written",
-      data: { regionId: 42, startTime: 10.5 },
+      data: { startTime: 10.5 },
     } as any);
-    expect(useStore.getState().currentTake).toEqual({ regionId: 42, startTime: 10.5 });
+    expect(useStore.getState().currentTake).toEqual({ startTime: 10.5 });
   });
 
   it("snapshot message populates the store", () => {

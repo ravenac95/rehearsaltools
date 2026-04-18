@@ -5,21 +5,6 @@ import { describe, it, expect } from "vitest";
 import { AppState, nativeEventToTransportPatch } from "../src/state.js";
 
 describe("nativeEventToTransportPatch", () => {
-  it("/play → playing=true, stopped=false, recording=false", () => {
-    const patch = nativeEventToTransportPatch("/play", [1]);
-    expect(patch).toEqual({ playing: true, stopped: false, recording: false });
-  });
-
-  it("/stop → playing=false, stopped=true, recording=false", () => {
-    const patch = nativeEventToTransportPatch("/stop", [1]);
-    expect(patch).toEqual({ playing: false, stopped: true, recording: false });
-  });
-
-  it("/record → playing=false, stopped=false, recording=true", () => {
-    const patch = nativeEventToTransportPatch("/record", [1]);
-    expect(patch).toEqual({ playing: false, stopped: false, recording: true });
-  });
-
   it("/playing with arg=1 → { playing: true }", () => {
     expect(nativeEventToTransportPatch("/playing", [1])).toEqual({ playing: true });
   });
@@ -56,6 +41,10 @@ describe("nativeEventToTransportPatch", () => {
     expect(nativeEventToTransportPatch("/click", [1])).toEqual({ metronome: true });
   });
 
+  it("/metronome 1 → { metronome: true }", () => {
+    expect(nativeEventToTransportPatch("/metronome", [1])).toEqual({ metronome: true });
+  });
+
   it("unknown address → {}", () => {
     expect(nativeEventToTransportPatch("/unknown/address", [])).toEqual({});
   });
@@ -87,7 +76,7 @@ describe("AppState.updateTransport", () => {
   it("round-trip: nativeEventToTransportPatch feeds updateTransport", () => {
     const state = new AppState();
     const events: Array<[string, (number | string | boolean)[]]> = [
-      ["/play", [1]],
+      ["/playing", [1]],
       ["/tempo", [120.5]],
       ["/time", [42.3]],
       ["/timesig_num", [4]],

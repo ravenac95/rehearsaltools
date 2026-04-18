@@ -41,9 +41,6 @@ export function nativeEventToTransportPatch(
   args: readonly (string | number | boolean)[],
 ): Partial<TransportState> {
   switch (address) {
-    case "/play":      return { playing: true,  stopped: false, recording: false };
-    case "/stop":      return { playing: false, stopped: true,  recording: false };
-    case "/record":    return { playing: false, stopped: false, recording: true  };
     case "/playing":   return { playing:   Boolean(args[0]) };
     case "/stopped":   return { stopped:   Boolean(args[0]) };
     case "/recording": return { recording: Boolean(args[0]) };
@@ -51,6 +48,7 @@ export function nativeEventToTransportPatch(
     case "/timesig_num":   return { num:   Number(args[0]) };
     case "/timesig_denom": return { denom: Number(args[0]) };
     case "/time":      return { position: Number(args[0]) };
+    case "/metronome":
     case "/click":     return { metronome: Boolean(args[0]) };
     default:           return {};
   }

@@ -20,12 +20,23 @@ export default function regionsRoutes({ rt, webRemote }: Deps) {
 
     app.post<{ Body: { name?: string } }>("/api/regions", async (_req, reply) => {
       const name = _req.body?.name ?? "";
+      const before = await webRemote.listRegions();
+      const prevMaxId = before.reduce((m, r) => Math.max(m, r.id), -1);
+
       await rt.send("/rt/region/new", { name });
-      const regions = await webRemote.listRegions();
-      const region = regions.reduce<RegionRow | undefined>(
-        (best, r) => (best === undefined || r.id > best.id ? r : best),
-        undefined,
-      );
+
+      // REAPER processes the OSC command asynchronously; retry the refetch
+      // a few times to give it a chance to create the region.
+      let region: RegionRow | undefined;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        if (attempt > 0) await new Promise((r) => setTimeout(r, 50));
+        const after = await webRemote.listRegions();
+        region = after.reduce<RegionRow | undefined>(
+          (best, r) => r.id > prevMaxId && (best === undefined || r.id > best.id) ? r : best,
+          undefined,
+        );
+        if (region) break;
+      }
       if (!region) {
         return reply.code(502).send({ ok: false, error: "region not found after creation" });
       }
