@@ -5,7 +5,6 @@ local project_h   = dofile("src/handlers/project.lua")
 local regions_h   = dofile("src/handlers/regions.lua")
 local tempo_h     = dofile("src/handlers/tempo.lua")
 local timesig_h   = dofile("src/handlers/timesig.lua")
-local metronome_h = dofile("src/handlers/metronome.lua")
 local mixdown_h   = dofile("src/handlers/mixdown.lua")
 local songform_h  = dofile("src/handlers/songform.lua")
 
@@ -269,19 +268,6 @@ describe("timesig handler", function()
       if c.fn == "set_timesig_at_measure" then found = c; break end
     end
     assert_not_nil(found); assert_eq(found.args.m, 3)
-  end)
-end)
-
--- ── metronome ────────────────────────────────────────────────────────────────
-
-describe("metronome handler", function()
-  it("toggles and reports new state", function()
-    local a = make_adapter()
-    local h = metronome_h.new(a)
-    local res = h({})
-    assert_eq(res.on, true)
-    local res2 = h({})
-    assert_eq(res2.on, false)
   end)
 end)
 
