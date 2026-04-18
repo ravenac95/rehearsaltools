@@ -18,7 +18,7 @@ export interface TransportState {
   position: number; bpm: number; num: number; denom: number;
   metronome: boolean;
 }
-export interface Take { regionId: number; startTime: number; }
+export interface Take { startTime: number; }
 
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, {
@@ -78,7 +78,7 @@ export const api = {
     req<{ songForm: SongForm }>("/api/songform",
       { method: "PUT", body: JSON.stringify({ sectionIds }) }),
   writeSongForm: (regionName?: string) =>
-    req<{ regionId: number; startTime: number }>("/api/songform/write",
+    req<{ startTime: number }>("/api/songform/write",
       { method: "POST", body: JSON.stringify({ regionName }) }),
 
   // Mixdown
@@ -91,7 +91,7 @@ export const api = {
 export type WsMessage =
   | { type: "snapshot"; data: { transport: Partial<TransportState>; currentTake: Take | null; sections: Section[]; songForm: SongForm } }
   | { type: "transport"; data: TransportState }
-  | { type: "songform:written"; data: { regionId: number; startTime: number; regionName?: string } }
+  | { type: "songform:written"; data: { startTime: number; regionName?: string } }
   | { type: string; data: unknown };
 
 export function connectWs(onMessage: (msg: WsMessage) => void): WebSocket {

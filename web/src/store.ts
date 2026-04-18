@@ -84,8 +84,8 @@ export const useStore = create<AppStore>((set, get) => ({
     } else if (msg.type === "transport") {
       set({ transport: msg.data as TransportState });
     } else if (msg.type === "songform:written") {
-      const d = msg.data as { regionId: number; startTime: number };
-      set({ currentTake: { regionId: d.regionId, startTime: d.startTime } });
+      const d = msg.data as { startTime: number };
+      set({ currentTake: { startTime: d.startTime } });
       // Also refresh regions to pick up the new one
       get().refreshRegions();
     }
