@@ -12,8 +12,8 @@ export interface TransportState {
   metronome: boolean;
 }
 
+/** Current take — just the start time; regionId is no longer tracked here. */
 export interface Take {
-  regionId: number;
   startTime: number;  // seconds
 }
 
@@ -29,5 +29,29 @@ export class AppState {
 
   setTake(take: Take | null): void {
     this.currentTake = take;
+  }
+}
+
+/**
+ * Map a native REAPER OSC event into a transport patch.
+ * Returns an empty patch for addresses we don't care about.
+ */
+export function nativeEventToTransportPatch(
+  address: string,
+  args: readonly (string | number | boolean)[],
+): Partial<TransportState> {
+  switch (address) {
+    case "/play":      return { playing: true,  stopped: false, recording: false };
+    case "/stop":      return { playing: false, stopped: true,  recording: false };
+    case "/record":    return { playing: false, stopped: false, recording: true  };
+    case "/playing":   return { playing:   Boolean(args[0]) };
+    case "/stopped":   return { stopped:   Boolean(args[0]) };
+    case "/recording": return { recording: Boolean(args[0]) };
+    case "/tempo":     return { bpm:      Number(args[0]) };
+    case "/timesig_num":   return { num:   Number(args[0]) };
+    case "/timesig_denom": return { denom: Number(args[0]) };
+    case "/time":      return { position: Number(args[0]) };
+    case "/click":     return { metronome: Boolean(args[0]) };
+    default:           return {};
   }
 }

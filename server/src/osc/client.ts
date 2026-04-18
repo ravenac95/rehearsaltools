@@ -48,3 +48,16 @@ export class ReaperNativeClient {
   /** Seek to a project time in seconds. */
   seek(timeSeconds: number) { return this.osc.send("/time", timeSeconds); }
 }
+
+/**
+ * Fire-and-forget client for /rt/* addresses served by REAPER's native OSC
+ * server. Payload is serialised as a single JSON string arg.
+ */
+export class RtClient {
+  constructor(private osc: OscClient) {}
+
+  /** Fire-and-forget /rt/* write. Payload is serialised as a single JSON string arg. */
+  send(address: string, payload: Record<string, unknown> = {}): Promise<void> {
+    return this.osc.send(address, JSON.stringify(payload));
+  }
+}
