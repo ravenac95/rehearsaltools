@@ -1,20 +1,35 @@
 // server/src/routes/regions.ts
 // Regions CRUD + playback + seek-to-end.
+// Reads via WebRemoteClient; writes via RtClient fire-and-forget.
 
 import type { FastifyInstance } from "fastify";
-import type { DispatcherClient } from "../osc/commands.js";
+import type { RtClient } from "../osc/client.js";
+import type { WebRemoteClient, RegionRow } from "../reaper/web-remote.js";
 
-export default function regionsRoutes(dispatcher: DispatcherClient) {
+interface Deps {
+  rt: RtClient;
+  webRemote: WebRemoteClient;
+}
+
+export default function regionsRoutes({ rt, webRemote }: Deps) {
   return async function (app: FastifyInstance) {
     app.get("/api/regions", async () => {
-      const data = await dispatcher.request<{ regions: unknown[] }>("/rt/region/list");
-      return { ok: true, ...data };
+      const regions = await webRemote.listRegions();
+      return { ok: true, regions };
     });
 
-    app.post<{ Body: { name?: string } }>("/api/regions", async (req) => {
-      const { name } = req.body ?? {};
-      const data = await dispatcher.request("/rt/region/new", { name: name ?? "" });
-      return { ok: true, region: data };
+    app.post<{ Body: { name?: string } }>("/api/regions", async (_req, reply) => {
+      const name = _req.body?.name ?? "";
+      await rt.send("/rt/region/new", { name });
+      const regions = await webRemote.listRegions();
+      const region = regions.reduce<RegionRow | undefined>(
+        (best, r) => (best === undefined || r.id > best.id ? r : best),
+        undefined,
+      );
+      if (!region) {
+        return reply.code(502).send({ ok: false, error: "region not found after creation" });
+      }
+      return { ok: true, region };
     });
 
     app.patch<{ Params: { id: string }; Body: { name: string } }>(
@@ -24,12 +39,16 @@ export default function regionsRoutes(dispatcher: DispatcherClient) {
         if (Number.isNaN(id)) {
           return reply.code(400).send({ ok: false, error: "id must be a number" });
         }
-        const { name } = req.body ?? ({} as any);
+        const name = req.body?.name;
         if (typeof name !== "string" || name.length === 0) {
           return reply.code(400).send({ ok: false, error: "name required" });
         }
-        const data = await dispatcher.request("/rt/region/rename", { id, name });
-        return { ok: true, region: data };
+        await rt.send("/rt/region/rename", { id, name });
+        const region = (await webRemote.listRegions()).find((r) => r.id === id);
+        if (!region) {
+          return reply.code(502).send({ ok: false, error: "region not found after rename" });
+        }
+        return { ok: true, region };
       },
     );
 
@@ -38,13 +57,14 @@ export default function regionsRoutes(dispatcher: DispatcherClient) {
       if (Number.isNaN(id)) {
         return reply.code(400).send({ ok: false, error: "id must be a number" });
       }
-      const data = await dispatcher.request("/rt/region/play", { id });
-      return { ok: true, ...(data as object) };
+      await rt.send("/rt/region/play", { id });
+      return { ok: true };
     });
 
     app.post("/api/playhead/end", async () => {
-      const data = await dispatcher.request<{ position: number }>("/rt/playhead/end");
-      return { ok: true, ...data };
+      await rt.send("/rt/playhead/end", {});
+      const transport = await webRemote.getTransport();
+      return { ok: true, position: transport.positionSeconds };
     });
   };
 }
