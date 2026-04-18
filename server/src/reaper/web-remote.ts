@@ -136,10 +136,13 @@ export function parseRegionList(text: string): RegionRow[] {
 
 // ── WebRemoteClient ──────────────────────────────────────────────────────────
 
+/** Subset of the fetch signature used by WebRemoteClient for testability. */
+export type FetchLike = (url: string, init?: RequestInit) => Promise<Response>;
+
 export class WebRemoteClient {
   constructor(
     private baseUrl: string,
-    private fetchImpl: typeof fetch = fetch,
+    private fetchImpl: FetchLike = fetch,
     private timeoutMs = 2000,
   ) {}
 

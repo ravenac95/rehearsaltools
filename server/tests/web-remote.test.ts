@@ -7,6 +7,7 @@ import {
   parseBeatPos,
   parseRegionList,
   WebRemoteClient,
+  type FetchLike,
 } from "../src/reaper/web-remote.js";
 
 // ── Fixtures ────────────────────────────────────────────────────────────────
@@ -141,7 +142,7 @@ describe("parseRegionList", () => {
 
 // ── WebRemoteClient ──────────────────────────────────────────────────────────
 
-function makeFakeFetch(status: number, body: string) {
+function makeFakeFetch(status: number, body: string): FetchLike {
   return async (_url: string, _init?: RequestInit): Promise<Response> => {
     if (status >= 200 && status < 300) {
       return new Response(body, { status });
@@ -150,7 +151,7 @@ function makeFakeFetch(status: number, body: string) {
   };
 }
 
-function makeThrowingFetch(msg: string) {
+function makeThrowingFetch(msg: string): FetchLike {
   return async (_url: string, _init?: RequestInit): Promise<Response> => {
     throw new Error(msg);
   };
