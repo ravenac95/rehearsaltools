@@ -85,7 +85,7 @@ describe("POST /api/regions", () => {
     expect(body.ok).toBe(true);
     expect(body.region.id).toBe(5);
     expect(body.region.name).toBe("intro");
-    expect(stubs.rtCalls[0][0]).toBe("/rt/region/new");
+    expect(stubs.rtCalls[0][0]).toBe("region.new");
     expect(stubs.rtCalls[0][1]).toEqual({ name: "intro" });
   });
 
@@ -127,7 +127,7 @@ describe("PATCH /api/regions/:id", () => {
     expect(body.ok).toBe(true);
     expect(body.region.id).toBe(3);
     expect(body.region.name).toBe("verse");
-    expect(stubs.rtCalls[0][0]).toBe("/rt/region/rename");
+    expect(stubs.rtCalls[0][0]).toBe("region.rename");
     expect(stubs.rtCalls[0][1]).toEqual({ id: 3, name: "verse" });
   });
 
@@ -179,7 +179,7 @@ describe("POST /api/regions/:id/play", () => {
     expect(res.statusCode).toBe(200);
     const body = res.json();
     expect(body.ok).toBe(true);
-    expect(stubs.rtCalls[0][0]).toBe("/rt/region/play");
+    expect(stubs.rtCalls[0][0]).toBe("region.play");
     expect(stubs.rtCalls[0][1]).toEqual({ id: 7 });
   });
 
@@ -204,7 +204,7 @@ describe("POST /api/playhead/end", () => {
     const body = res.json();
     expect(body.ok).toBe(true);
     expect(body.position).toBe(42.0);
-    expect(stubs.rtCalls[0][0]).toBe("/rt/playhead/end");
+    expect(stubs.rtCalls[0][0]).toBe("playhead.end");
     expect(stubs.rtCalls[0][1]).toEqual({});
   });
 });

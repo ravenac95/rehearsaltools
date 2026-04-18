@@ -11,7 +11,7 @@ song-form sequencer without touching the laptop.
 ┌────────────────────┐      WebSocket+REST     ┌─────────────────────┐   OSC (UDP)    ┌────────────────────┐
 │  React SPA (Vite)  │ ─────────────────────── │  Node service       │ ─────────────▶ │ REAPER             │
 │  mobile-first      │                         │  (Fastify + node-   │                │ • native OSC in    │
-│                    │ ◀─────────────────────  │   osc + WS)         │ ◀───────────── │ • /rt/* → actions  │
+│                    │ ◀─────────────────────  │   osc + WS)         │ ◀───────────── │ • /rehearsaltools  │
 └────────────────────┘     status updates      └─────────────────────┘   OSC feedback └────────────────────┘
                                                        │ HTTP reads
                                                        ▼
@@ -23,8 +23,9 @@ Two communication paths to REAPER:
 
 - **Native REAPER OSC** — driven via a `.ReaperOSC` config file. Handles
   transport (`/play`, `/stop`, `/record`), tempo (`/tempo/raw`), seek
-  (`/time`), and metronome (`/click`). Also receives `/rt/*` action triggers
-  which REAPER maps to custom ReaScript actions.
+  (`/time`), and metronome (`/click`). Also receives `/rehearsaltools` — a
+  single multiplexed address whose JSON payload names the operation via a
+  `command` field; REAPER dispatches it through one custom ReaScript action.
 - **REAPER web remote** — HTTP reads for transport state, regions, and markers
   via REAPER's built-in web interface (`/_/TRANSPORT`, `/_/REGION`, etc.).
 
@@ -89,14 +90,18 @@ Control)**, and set:
 Those defaults match the server's defaults (`REAPER_OSC_PORT=8000`,
 `REAPER_FEEDBACK_PORT=8001`). Override via environment variables if needed.
 
-### 3. Install custom actions
+### 3. Install the custom action
 
-See `reascripts/reaper-osc-config/README.md` for the complete step-by-step
-guide to register the `/rt/*` action scripts. In brief:
+A single ReaScript (`reascripts/rehearsaltools.lua`) handles every `/rt/*`
+operation via a JSON `command` field. See
+`reascripts/reaper-osc-config/README.md` for the full step-by-step guide. In
+brief:
 
-1. Copy or symlink `reascripts/actions/` into your REAPER Scripts folder.
-2. Append `reaper-kb.ini.snippet` to `<resource>/reaper-kb.ini`.
-3. Append `reaper-osc-actions.ini.snippet` to `<resource>/reaper-osc-actions.ini`.
+1. Copy or symlink `reascripts/` into your REAPER Scripts folder (so the
+   script lives at `<resource>/Scripts/rehearsaltools/rehearsaltools.lua`).
+2. Append the one-line `reaper-kb.ini.snippet` to `<resource>/reaper-kb.ini`.
+3. Append the one-line `reaper-osc-actions.ini.snippet` to
+   `<resource>/reaper-osc-actions.ini`.
 4. Restart REAPER.
 
 ## Run the service
@@ -146,26 +151,18 @@ REAPER adapter. No REAPER installation is required.
 ```
 rehearsaltools/
 ├── reascripts/                          # REAPER-side Lua code
-│   ├── actions/                         # one ReaScript per /rt/* address
-│   │   ├── rt_project_new.lua
-│   │   ├── rt_region_new.lua
-│   │   ├── rt_region_rename.lua
-│   │   ├── rt_region_play.lua
-│   │   ├── rt_playhead_end.lua
-│   │   ├── rt_tempo.lua
-│   │   ├── rt_timesig.lua
-│   │   ├── rt_mixdown_all.lua
-│   │   └── rt_songform_write.lua
+│   ├── rehearsaltools.lua               # single custom action — multiplexes /rt/* ops
 │   ├── src/
 │   │   ├── json.lua                     # pure-Lua JSON
 │   │   ├── payload.lua                  # reads OSC arg from REAPER action context
+│   │   ├── dispatch.lua                 # command → handler router
 │   │   ├── validation.lua               # payload validators
 │   │   ├── reaper_api.lua               # adapter around reaper.* calls
-│   │   └── handlers/                    # one file per /rt/* path
+│   │   └── handlers/                    # one file per command namespace
 │   ├── reaper-osc-config/
 │   │   ├── RehearsalTools.ReaperOSC     # REAPER OSC device pattern file
-│   │   ├── reaper-osc-actions.ini.snippet  # maps /rt/* OSC → custom action IDs
-│   │   ├── reaper-kb.ini.snippet        # registers rt_*.lua as custom actions
+│   │   ├── reaper-osc-actions.ini.snippet  # maps /rehearsaltools OSC → action ID
+│   │   ├── reaper-kb.ini.snippet        # registers rehearsaltools.lua as action
 │   │   └── README.md                    # step-by-step setup guide
 │   └── tests/                           # pure-Lua unit tests
 │

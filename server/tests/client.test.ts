@@ -1,5 +1,6 @@
 // server/tests/client.test.ts
-// Tests for RtClient (fire-and-forget /rt/* writer).
+// Tests for RtClient — serialises `{command, ...payload}` JSON and sends it
+// to a single multiplexed OSC address (default /rehearsaltools).
 
 import { describe, it, expect, vi } from "vitest";
 import { RtClient } from "../src/osc/client.js";
@@ -16,32 +17,43 @@ function makeFakeOsc() {
 }
 
 describe("RtClient", () => {
-  it("send with no payload sends empty JSON object", async () => {
+  it("defaults to /rehearsaltools address", async () => {
     const { fake, calls } = makeFakeOsc();
     const rt = new RtClient(fake);
-    await rt.send("/rt/project/new");
+    await rt.send("project.new");
     expect(calls).toHaveLength(1);
-    expect(calls[0].address).toBe("/rt/project/new");
-    expect(calls[0].args[0]).toBe("{}");
+    expect(calls[0].address).toBe("/rehearsaltools");
   });
 
-  it("send with payload serialises to JSON string", async () => {
+  it("sends command-only payload as {command} JSON", async () => {
     const { fake, calls } = makeFakeOsc();
     const rt = new RtClient(fake);
-    await rt.send("/rt/region/new", { name: "intro" });
-    expect(calls).toHaveLength(1);
-    expect(calls[0].address).toBe("/rt/region/new");
-    expect(calls[0].args[0]).toBe('{"name":"intro"}');
+    await rt.send("project.new");
+    expect(calls[0].args[0]).toBe('{"command":"project.new"}');
   });
 
-  it("send with nested payload serialises correctly", async () => {
+  it("merges command and payload fields in the JSON envelope", async () => {
     const { fake, calls } = makeFakeOsc();
     const rt = new RtClient(fake);
-    await rt.send("/rt/songform/write", { startTime: 10.5, rows: [{ bpm: 120 }] });
-    expect(calls).toHaveLength(1);
+    await rt.send("region.new", { name: "intro" });
     const parsed = JSON.parse(calls[0].args[0] as string);
+    expect(parsed).toEqual({ command: "region.new", name: "intro" });
+  });
+
+  it("serialises nested payload correctly", async () => {
+    const { fake, calls } = makeFakeOsc();
+    const rt = new RtClient(fake);
+    await rt.send("songform.write", { startTime: 10.5, rows: [{ bpm: 120 }] });
+    const parsed = JSON.parse(calls[0].args[0] as string);
+    expect(parsed.command).toBe("songform.write");
     expect(parsed.startTime).toBe(10.5);
-    expect(parsed.rows).toHaveLength(1);
-    expect(parsed.rows[0].bpm).toBe(120);
+    expect(parsed.rows).toEqual([{ bpm: 120 }]);
+  });
+
+  it("honours an overridden address", async () => {
+    const { fake, calls } = makeFakeOsc();
+    const rt = new RtClient(fake, "/custom/endpoint");
+    await rt.send("project.new");
+    expect(calls[0].address).toBe("/custom/endpoint");
   });
 });

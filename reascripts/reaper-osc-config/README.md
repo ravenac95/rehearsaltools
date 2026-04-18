@@ -29,22 +29,25 @@ to connect REAPER to the RehearsalTools Node service.
 Override the Node server defaults with environment variables if you change
 these ports.
 
-### 3. Install the action scripts
+### 3. Install the action script
 
-Copy (or symlink) the `reascripts/actions/` folder into your REAPER Scripts
-folder so it lives at `<resource>/Scripts/rehearsaltools/actions/`.
+Copy (or symlink) the `reascripts/` folder into your REAPER Scripts folder so
+it lives at `<resource>/Scripts/rehearsaltools/`. The action script itself is
+`<resource>/Scripts/rehearsaltools/rehearsaltools.lua`; its sibling `src/`
+directory holds the handler modules it `dofile`s at runtime.
 
 REAPER's resource folder is shown in **Preferences → General → Resource path**.
 
 ```bash
 # Example — adjust paths to match your system:
-ln -s /path/to/rehearsaltools/reascripts/actions \
-      ~/Library/Application\ Support/REAPER/Scripts/rehearsaltools/actions
+ln -s /path/to/rehearsaltools/reascripts \
+      ~/Library/Application\ Support/REAPER/Scripts/rehearsaltools
 ```
 
-### 4. Register the custom actions
+### 4. Register the custom action
 
-Append the contents of `reaper-kb.ini.snippet` to your REAPER keyboard map:
+Append the one-line contents of `reaper-kb.ini.snippet` to your REAPER
+keyboard map:
 
 ```bash
 cat reaper-kb.ini.snippet >> ~/Library/Application\ Support/REAPER/reaper-kb.ini
@@ -53,10 +56,10 @@ cat reaper-kb.ini.snippet >> ~/Library/Application\ Support/REAPER/reaper-kb.ini
 (On Linux the resource folder is typically `~/.config/REAPER`; on Windows it
 is `%APPDATA%\REAPER`.)
 
-### 5. Map OSC addresses to actions
+### 5. Map the OSC address to the action
 
-Append the contents of `reaper-osc-actions.ini.snippet` to the OSC-actions
-mapping file:
+Append the one-line contents of `reaper-osc-actions.ini.snippet` to the
+OSC-actions mapping file:
 
 ```bash
 cat reaper-osc-actions.ini.snippet >> \
@@ -67,22 +70,24 @@ Create the file if it does not exist — REAPER will pick it up on next start.
 
 ### 6. Restart REAPER
 
-Restart REAPER for the keyboard map and OSC action mappings to take effect.
-REAPER will now invoke the matching `rt_*.lua` action script whenever it
-receives a `/rt/*` OSC message on the control surface port.
+Restart REAPER for the keyboard map and OSC action mapping to take effect.
+REAPER will now invoke `rehearsaltools.lua` whenever it receives an OSC
+message on `/rehearsaltools`.
 
 ## How it works
 
 ```
-Phone/browser  ──REST──►  Node service  ──OSC /rt/*──►  REAPER OSC server
-                                                          │
-                                        ◄──feedback──    └─► rt_*.lua action
-                                                              └─► handler.lua
+Phone/browser  ──REST──►  Node service  ──OSC /rehearsaltools──►  REAPER OSC
+                                                                    │
+                                           ◄──feedback──            └─► rehearsaltools.lua
+                                                                          └─► src/dispatch.lua
+                                                                              └─► src/handlers/*.lua
 ```
 
 - **Writes** (`POST /api/regions`, `POST /api/songform/write`, etc.) are sent
-  as OSC `/rt/*` messages to REAPER's native OSC port. REAPER triggers the
-  matching `rt_*.lua` ReaScript, which calls the handler module in `src/`.
+  as OSC messages to `/rehearsaltools` with a JSON payload whose `command`
+  field names the operation (`region.new`, `songform.write`, etc.). A single
+  ReaScript dispatches to the matching handler module under `src/handlers/`.
 
 - **Reads** (`GET /api/regions`, transport position, etc.) are fetched from
   REAPER's HTTP web remote (`/_/REGION`, `/_/TRANSPORT`, etc.).
@@ -90,11 +95,25 @@ Phone/browser  ──REST──►  Node service  ──OSC /rt/*──►  REAP
 - **Feedback** (transport state changes) arrives as native OSC messages from
   REAPER and is forwarded to connected browser clients over WebSocket.
 
+## Supported commands
+
+| `command` value    | Handler           |
+|--------------------|-------------------|
+| `project.new`      | `handlers/project.lua` |
+| `region.new`       | `handlers/regions.lua → new` |
+| `region.rename`    | `handlers/regions.lua → rename` |
+| `region.play`      | `handlers/regions.lua → play` |
+| `playhead.end`     | `handlers/regions.lua → seek_to_end` |
+| `tempo`            | `handlers/tempo.lua` |
+| `timesig`          | `handlers/timesig.lua` |
+| `mixdown.all`      | `handlers/mixdown.lua` |
+| `songform.write`   | `handlers/songform.lua` |
+
 ## File reference
 
 | File | Purpose |
 |------|---------|
 | `RehearsalTools.ReaperOSC` | OSC pattern file — bidirectional transport + feedback mappings |
-| `reaper-osc-actions.ini.snippet` | Maps `/rt/*` OSC addresses to custom-action IDs |
-| `reaper-kb.ini.snippet` | Registers each `rt_*.lua` script as a custom action |
+| `reaper-osc-actions.ini.snippet` | Maps `/rehearsaltools` → `_RS_rehearsaltools` |
+| `reaper-kb.ini.snippet` | Registers `rehearsaltools.lua` as the custom action |
 | `README.md` | This file |

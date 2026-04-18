@@ -23,7 +23,7 @@ export default function regionsRoutes({ rt, webRemote }: Deps) {
       const before = await webRemote.listRegions();
       const prevMaxId = before.reduce((m, r) => Math.max(m, r.id), -1);
 
-      await rt.send("/rt/region/new", { name });
+      await rt.send("region.new", { name });
 
       // REAPER processes the OSC command asynchronously; retry the refetch
       // a few times to give it a chance to create the region.
@@ -54,7 +54,7 @@ export default function regionsRoutes({ rt, webRemote }: Deps) {
         if (typeof name !== "string" || name.length === 0) {
           return reply.code(400).send({ ok: false, error: "name required" });
         }
-        await rt.send("/rt/region/rename", { id, name });
+        await rt.send("region.rename", { id, name });
         const region = (await webRemote.listRegions()).find((r) => r.id === id);
         if (!region) {
           return reply.code(502).send({ ok: false, error: "region not found after rename" });
@@ -68,12 +68,12 @@ export default function regionsRoutes({ rt, webRemote }: Deps) {
       if (Number.isNaN(id)) {
         return reply.code(400).send({ ok: false, error: "id must be a number" });
       }
-      await rt.send("/rt/region/play", { id });
+      await rt.send("region.play", { id });
       return { ok: true };
     });
 
     app.post("/api/playhead/end", async () => {
-      await rt.send("/rt/playhead/end", {});
+      await rt.send("playhead.end", {});
       const transport = await webRemote.getTransport();
       return { ok: true, position: transport.positionSeconds };
     });

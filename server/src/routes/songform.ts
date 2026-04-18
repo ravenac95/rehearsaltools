@@ -71,7 +71,7 @@ export default function songformRoutes(deps: Deps) {
         const transport = await webRemote.getTransport();
         const startTime = transport.positionSeconds;
 
-        await rt.send("/rt/songform/write", { regionName, rows, startTime });
+        await rt.send("songform.write", { regionName, rows, startTime });
 
         state.setTake({ startTime });
         ws.broadcast({

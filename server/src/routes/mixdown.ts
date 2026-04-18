@@ -10,7 +10,7 @@ export default function mixdownRoutes(rt: RtClient) {
       "/api/mixdown/all",
       async (req) => {
         const { output_dir } = req.body ?? {};
-        await rt.send("/rt/mixdown/all", { output_dir: output_dir ?? undefined });
+        await rt.send("mixdown.all", { output_dir: output_dir ?? undefined });
         return { ok: true };
       },
     );

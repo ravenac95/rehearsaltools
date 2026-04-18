@@ -98,7 +98,7 @@ describe("POST /api/songform/write", () => {
 
     // rt.send called with correct address and payload
     expect(rtCalls).toHaveLength(1);
-    expect(rtCalls[0][0]).toBe("/rt/songform/write");
+    expect(rtCalls[0][0]).toBe("songform.write");
     const sentPayload = rtCalls[0][1];
     expect(sentPayload.startTime).toBe(10);
     expect(sentPayload.regionName).toBe("Take 1");

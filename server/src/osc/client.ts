@@ -47,14 +47,16 @@ export class ReaperNativeClient {
 }
 
 /**
- * Fire-and-forget client for /rt/* addresses served by REAPER's native OSC
- * server. Payload is serialised as a single JSON string arg.
+ * Fire-and-forget client for the single `/rehearsaltools` OSC endpoint served
+ * by REAPER's native OSC server. The `command` name plus the remaining
+ * payload fields are serialised as one JSON string arg; the REAPER-side
+ * dispatcher routes by `command`.
  */
 export class RtClient {
-  constructor(private osc: OscClient) {}
+  constructor(private osc: OscClient, private address: string = "/rehearsaltools") {}
 
-  /** Fire-and-forget /rt/* write. Payload is serialised as a single JSON string arg. */
-  send(address: string, payload: Record<string, unknown> = {}): Promise<void> {
-    return this.osc.send(address, JSON.stringify(payload));
+  /** Fire-and-forget. `command` is packed into the JSON payload. */
+  send(command: string, payload: Record<string, unknown> = {}): Promise<void> {
+    return this.osc.send(this.address, JSON.stringify({ command, ...payload }));
   }
 }
