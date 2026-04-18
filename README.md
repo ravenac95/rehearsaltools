@@ -84,8 +84,8 @@ Control)**, and set:
 
 - **Pattern config**: select `reascripts/reaper-osc-config/RehearsalTools.ReaperOSC`
 - **Device IP**: `127.0.0.1` (the Node service on the same laptop)
-- **Device listening port**: `8001` (REAPER listens here for UDP from the service)
-- **Device send port**: `8000` (REAPER sends feedback here to the service)
+- **Device listening port**: `8000` (REAPER listens here for UDP from the service)
+- **Device send port**: `8001` (REAPER sends feedback here to the service)
 
 Those defaults match the server's defaults (`REAPER_OSC_PORT=8000`,
 `REAPER_FEEDBACK_PORT=8001`). Override via environment variables if needed.
@@ -130,7 +130,7 @@ The server prints the listening URL. On the laptop, open the UI at
 | `REAPER_FEEDBACK_HOST`    | `0.0.0.0`      | Host to receive native OSC feedback |
 | `REAPER_FEEDBACK_PORT`    | `8001`         | UDP port to receive native OSC feedback |
 | `REAPER_WEB_HOST`         | `127.0.0.1`    | REAPER web remote host |
-| `REAPER_WEB_PORT`         | `8080`         | REAPER web remote port (**see port collision note above**) |
+| `REAPER_WEB_PORT`         | `8081`         | REAPER web remote port (**see port collision note above**) |
 | `DATA_FILE`               | `./data/rehearsaltools.json` | Persistent store path |
 
 ## Running tests

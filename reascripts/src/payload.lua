@@ -11,8 +11,10 @@
 --   Returns (tbl, nil) on success, (nil, err_string) on failure.
 --   An empty string arg returns ({}, nil).
 
-local script_dir = debug.getinfo(1, "S").source:sub(2):match("(.*[/\\])") or "./"
-local json = dofile(script_dir .. "json.lua")
+local script_dir = (reaper and reaper.get_action_context)
+  and ({reaper.get_action_context()})[2]:match("^(.*[\\/])")
+  or ""
+local json = dofile(script_dir .. "src/json.lua")
 
 local M = {}
 

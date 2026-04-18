@@ -3,7 +3,10 @@
 -- Configures REAPER's render settings to render each region into a separate
 -- file named after the region, then triggers a render.
 
-local validation = dofile("src/validation.lua")
+local script_dir = (reaper and reaper.get_action_context)
+  and ({reaper.get_action_context()})[2]:match("^(.*[\\/])")
+  or ""
+local validation = dofile(script_dir .. "src/validation.lua")
 
 local M = {}
 
