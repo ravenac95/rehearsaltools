@@ -5,9 +5,14 @@
 # Point the "device" at the Node service's OSC listener (default 127.0.0.1:8000
 # inbound to REAPER, 8001 outbound from REAPER).
 #
-# Only the endpoints used by RehearsalTools are listed. The custom /rt/*
-# endpoints are NOT routed through this file — they are handled by the
-# reaper_osc_dispatcher.lua ReaScript over a separate UDP socket.
+# The /rt/* addresses are served by REAPER's own OSC server (this same device).
+# Each /rt/* address maps to a custom ReaScript action registered in
+# reaper-osc-actions.ini — see reaper-kb.ini.snippet and the README in this
+# directory for setup instructions.
+#
+# Bidirectional semantics for TIME/n/time:
+#   Inbound  (server → REAPER): seek REAPER's playhead to the given time in seconds.
+#   Outbound (REAPER → server): REAPER emits the current playhead position as feedback.
 
 # Transport
 PLAY                    t/play

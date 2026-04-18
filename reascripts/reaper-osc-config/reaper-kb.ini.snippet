@@ -1,0 +1,26 @@
+# reaper-kb.ini.snippet
+#
+# Append the lines below to <REAPER resource>/reaper-kb.ini.
+# These SCR lines register each ReaScript as a custom action so that REAPER
+# can look up the _RS_* command IDs referenced in reaper-osc-actions.ini.
+#
+# Format: SCR <section> <reserved> <id> "<description>" <script_path>
+#   section   4 = Main section (global)
+#   reserved  0 (always 0)
+#   id        The short command ID stem (without the _RS_ prefix)
+#   path      Path to the .lua file, relative to the REAPER resource folder.
+#             Either copy reascripts/actions/ into your REAPER Scripts folder,
+#             or symlink it, so that the relative path below resolves.
+#
+# Example resource-folder layout after copying:
+#   <REAPER resource>/Scripts/rehearsaltools/actions/rt_project_new.lua
+
+SCR 4 0 RS_rt_project_new "Custom: rt_project_new" Scripts/rehearsaltools/actions/rt_project_new.lua
+SCR 4 0 RS_rt_region_new "Custom: rt_region_new" Scripts/rehearsaltools/actions/rt_region_new.lua
+SCR 4 0 RS_rt_region_rename "Custom: rt_region_rename" Scripts/rehearsaltools/actions/rt_region_rename.lua
+SCR 4 0 RS_rt_region_play "Custom: rt_region_play" Scripts/rehearsaltools/actions/rt_region_play.lua
+SCR 4 0 RS_rt_playhead_end "Custom: rt_playhead_end" Scripts/rehearsaltools/actions/rt_playhead_end.lua
+SCR 4 0 RS_rt_tempo "Custom: rt_tempo" Scripts/rehearsaltools/actions/rt_tempo.lua
+SCR 4 0 RS_rt_timesig "Custom: rt_timesig" Scripts/rehearsaltools/actions/rt_timesig.lua
+SCR 4 0 RS_rt_mixdown_all "Custom: rt_mixdown_all" Scripts/rehearsaltools/actions/rt_mixdown_all.lua
+SCR 4 0 RS_rt_songform_write "Custom: rt_songform_write" Scripts/rehearsaltools/actions/rt_songform_write.lua

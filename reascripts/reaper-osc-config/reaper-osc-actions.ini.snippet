@@ -1,0 +1,19 @@
+# reaper-osc-actions.ini.snippet
+#
+# Append the lines below to <REAPER resource>/reaper-osc-actions.ini
+# (create the file if it does not exist).
+#
+# Each line maps an incoming /rt/* OSC address to a custom-action command ID.
+# The _RS_<slug> IDs match the IDs REAPER assigns when the corresponding
+# reascripts/actions/rt_*.lua file is registered via the Action List.
+# See reaper-kb.ini.snippet for the SCR lines that register those IDs.
+
+/rt/project/new=_RS_rt_project_new
+/rt/region/new=_RS_rt_region_new
+/rt/region/rename=_RS_rt_region_rename
+/rt/region/play=_RS_rt_region_play
+/rt/playhead/end=_RS_rt_playhead_end
+/rt/tempo=_RS_rt_tempo
+/rt/timesig=_RS_rt_timesig
+/rt/mixdown/all=_RS_rt_mixdown_all
+/rt/songform/write=_RS_rt_songform_write
