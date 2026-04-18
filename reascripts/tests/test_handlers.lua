@@ -122,39 +122,51 @@ end)
 -- ── regions ────────────────────────────────────────────────────────────────
 
 describe("regions.new handler", function()
-  it("creates open-ended region at playhead", function()
+  it("creates open-ended region at playhead (side-effect only)", function()
     local a = make_adapter()
     a._cursor = 100
     local h = regions_h.new(a)
-    local res, err = h.new({name = "hi"})
+    local _, err = h.new({name = "hi"})
     assert_nil(err)
-    assert_not_nil(res.id)
-    assert_eq(res.start, 100)
-    assert_true(res.stop >= 100 + 60 * 60 * 24)  -- 24h sentinel
+    -- Verify side-effect: add_region was called with start=100 and 24h sentinel end
+    local saw_add = false
+    for _, c in ipairs(a._calls) do
+      if c.fn == "add_region" then
+        saw_add = true
+        assert_eq(c.args.start, 100)
+        assert_true(c.args.stop >= 100 + 60 * 60 * 24)
+      end
+    end
+    assert_true(saw_add)
   end)
   it("defaults name to empty string", function()
     local a = make_adapter()
     local h = regions_h.new(a)
-    local res = h.new({})
-    assert_eq(res.name, "")
+    h.new({})
+    -- Verify add_region was called with name=""
+    local call = a._calls[1]
+    assert_not_nil(call)
+    assert_eq(call.fn, "add_region")
+    assert_eq(call.args.name, "")
   end)
 end)
 
 describe("regions.rename handler", function()
-  it("renames an existing region", function()
+  it("renames an existing region (side-effect only)", function()
     local a = make_adapter()
     local r = regions_h.new(a)
-    local created = r.new({name = "original"})
-    local res, err = r.rename({id = created.id, name = "updated"})
+    -- Create a region first; the handler is side-effect only so we use adapter state
+    r.new({name = "original"})
+    local region_id = a._regions[1].id
+    local _, err = r.rename({id = region_id, name = "updated"})
     assert_nil(err)
-    assert_eq(res.name, "updated")
     assert_eq(a._regions[1].name, "updated")
   end)
   it("errors on unknown region id", function()
     local a = make_adapter()
     local r = regions_h.new(a)
-    local res, err = r.rename({id = 999, name = "x"})
-    assert_nil(res)
+    local _, err = r.rename({id = 999, name = "x"})
+    assert_not_nil(err)
     assert_true(err:find("not found"))
   end)
 end)
@@ -174,9 +186,10 @@ describe("regions.play handler", function()
     local a = make_adapter()
     local r = regions_h.new(a)
     a._cursor = 5
-    local created = r.new({name = "x"})
+    r.new({name = "x"})
+    local region_id = a._regions[1].id
     a._cursor = 42  -- move cursor away
-    local res, err = r.play({id = created.id})
+    local res, err = r.play({id = region_id})
     assert_nil(err)
     assert_eq(res.start, 5)
     assert_eq(a._cursor, 5)  -- play should have seeked back
@@ -190,13 +203,14 @@ describe("regions.play handler", function()
 end)
 
 describe("regions.seek_to_end handler", function()
-  it("returns 0 when there are no items", function()
+  it("sets cursor to 0 when there are no items (pure side-effect)", function()
     local a = make_adapter()
     local r = regions_h.new(a)
-    local res = r.seek_to_end({})
-    assert_eq(res.position, 0)
+    r.seek_to_end({})
+    -- cursor should be set to 0 (the computed end)
+    assert_eq(a._cursor, 0)
   end)
-  it("finds the max end across all tracks", function()
+  it("finds the max end across all tracks and sets cursor", function()
     local a = make_adapter()
     a._tracks = 2
     a._items = {
@@ -205,8 +219,7 @@ describe("regions.seek_to_end handler", function()
       {track_n = 1, position = 12, length = 3},
     }
     local r = regions_h.new(a)
-    local res = r.seek_to_end({})
-    assert_eq(res.position, 25)
+    r.seek_to_end({})
     assert_eq(a._cursor, 25)
   end)
 end)
@@ -314,36 +327,34 @@ describe("songform.compute_row_positions", function()
 end)
 
 describe("songform handler", function()
-  it("writes markers and creates an open-ended region at playhead", function()
+  it("writes markers and creates an open-ended region using startTime from payload", function()
     local a = make_adapter()
-    a._cursor = 10
-    -- qn_scale = 2 → time_to_qn(10) = 20
+    -- startTime is now injected via payload, not from get_cursor_position
     local h = songform_h.new(a)
     local payload = {
+      startTime  = 10,
       regionName = "Take 1",
       rows = {
         {barOffset = 0, num = 4, denom = 4, bpm = 80},
         {barOffset = 4, num = 4, denom = 4, bpm = 90},
       },
     }
-    local res, err = h(payload)
+    local _, err = h(payload)
     assert_nil(err)
-    assert_eq(res.startTime, 10)
-    assert_eq(#res.rows, 2)
-    -- region created
+    -- region created at startTime=10
     assert_eq(#a._regions, 1)
     assert_eq(a._regions[1].start, 10)
     assert_eq(a._regions[1].name, "Take 1")
-    -- markers written at two times
+    -- markers written at two times (qn_scale=2 → time_to_qn(10)=20)
     local marker_calls = {}
     for _, c in ipairs(a._calls) do
       if c.fn == "set_marker_at_time" then table.insert(marker_calls, c) end
     end
     assert_eq(#marker_calls, 2)
-    -- first marker at the playhead (time=10)
+    -- first marker at startTime (time=10)
     assert_eq(marker_calls[1].args.t, 10)
     assert_eq(marker_calls[1].args.bpm, 80)
-    -- second marker: 4 bars of 4/4 from playhead → 16 QN → time = (20 + 16)/2 = 18
+    -- second marker: 4 bars of 4/4 → 16 QN → time = (20 + 16)/2 = 18
     assert_eq(marker_calls[2].args.t, 18)
     assert_eq(marker_calls[2].args.bpm, 90)
   end)
@@ -351,15 +362,23 @@ describe("songform handler", function()
   it("rejects rows whose first barOffset != 0", function()
     local a = make_adapter()
     local h = songform_h.new(a)
-    local res, err = h({rows = {{barOffset = 1, num = 4, denom = 4, bpm = 80}}})
-    assert_nil(res)
+    local _, err = h({startTime = 0, rows = {{barOffset = 1, num = 4, denom = 4, bpm = 80}}})
+    assert_not_nil(err)
     assert_true(err:find("barOffset must be 0"))
+  end)
+
+  it("rejects payload missing startTime", function()
+    local a = make_adapter()
+    local h = songform_h.new(a)
+    local _, err = h({rows = {{barOffset = 0, num = 4, denom = 4, bpm = 120}}})
+    assert_not_nil(err)
+    assert_true(err:find("startTime"))
   end)
 
   it("defaults region name to 'Take' when not provided", function()
     local a = make_adapter()
     local h = songform_h.new(a)
-    local _ = h({rows = {{barOffset = 0, num = 4, denom = 4, bpm = 120}}})
+    h({startTime = 0, rows = {{barOffset = 0, num = 4, denom = 4, bpm = 120}}})
     assert_eq(a._regions[1].name, "Take")
   end)
 end)
