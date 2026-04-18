@@ -53,9 +53,8 @@ function M.new(adapter)
 
       local start_t = adapter.get_cursor_position()
       local end_t   = start_t + LARGE_OFFSET
-      local id = adapter.add_region(start_t, end_t, data.name)
+      adapter.add_region(start_t, end_t, data.name)
       adapter.update_arrange()
-      return {id = id, start = start_t, stop = end_t, name = data.name}
     end,
 
     rename = function(payload)
@@ -67,7 +66,6 @@ function M.new(adapter)
 
       adapter.set_region(data.id, region.start, region.stop, data.name)
       adapter.update_arrange()
-      return {id = data.id, name = data.name}
     end,
 
     list = function(_payload)
@@ -89,7 +87,6 @@ function M.new(adapter)
     seek_to_end = function(_payload)
       local end_t = item_end_max(adapter)
       adapter.set_edit_cursor(end_t, true, false)
-      return {position = end_t}
     end,
   }
 end

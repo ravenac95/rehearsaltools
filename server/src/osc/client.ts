@@ -1,9 +1,6 @@
 // server/src/osc/client.ts
-// Thin wrapper over node-osc Client for the two outbound UDP channels:
-//   1. REAPER native OSC  (/play, /stop, /tempo/raw, /time, /click)
-//   2. Custom dispatcher  (/rt/*)
-//
-// The wrapper exposes typed helpers and a single `send()` for raw messages.
+// Thin wrapper over node-osc Client for REAPER's OSC port.
+// ReaperNativeClient sends transport controls; RtClient sends /rt/* action payloads.
 
 import { Client } from "node-osc";
 
@@ -47,4 +44,19 @@ export class ReaperNativeClient {
 
   /** Seek to a project time in seconds. */
   seek(timeSeconds: number) { return this.osc.send("/time", timeSeconds); }
+}
+
+/**
+ * Fire-and-forget client for the single `/rehearsaltools` OSC endpoint served
+ * by REAPER's native OSC server. The `command` name plus the remaining
+ * payload fields are serialised as one JSON string arg; the REAPER-side
+ * dispatcher routes by `command`.
+ */
+export class RtClient {
+  constructor(private osc: OscClient, private address: string = "/rehearsaltools") {}
+
+  /** Fire-and-forget. `command` is packed into the JSON payload. */
+  send(command: string, payload: Record<string, unknown> = {}): Promise<void> {
+    return this.osc.send(this.address, JSON.stringify({ command, ...payload }));
+  }
 }

@@ -5,21 +5,21 @@ export interface Config {
   httpHost: string;
   httpPort: number;
 
-  // UDP where we send /rt/* messages to the REAPER dispatcher ReaScript.
-  dispatcherHost: string;
-  dispatcherPort: number;
-
-  // UDP where the ReaScript sends /rt/reply and /rt/event back to us.
-  replyHost: string;
-  replyPort: number;
-
-  // UDP where we send REAPER's native OSC actions (/play, /stop, /tempo/raw, …).
+  // UDP where we send REAPER's native OSC actions (/play, /stop, /tempo/raw, …)
+  // and /rt/* fire-and-forget messages.
   reaperOscHost: string;
   reaperOscPort: number;
 
   // UDP where REAPER sends native OSC feedback (configured in its OSC device).
   reaperFeedbackHost: string;
   reaperFeedbackPort: number;
+
+  // HTTP — REAPER's built-in web remote, used for reads (GET transport, regions, etc.).
+  // NOTE: REAPER's web remote and the Node HTTP server both default to port 8080.
+  // The user must pick different ports — e.g. set REAPER_WEB_PORT=8081 in REAPER's
+  // web-remote preferences, or change HTTP_PORT for the Node server.
+  reaperWebHost: string;
+  reaperWebPort: number;
 
   // Persistent server store (sections + song form).
   dataFile: string;
@@ -44,17 +44,14 @@ export function loadConfig(): Config {
     httpHost:            strEnv("HTTP_HOST",            "0.0.0.0"),
     httpPort:            intEnv("HTTP_PORT",            8080),
 
-    dispatcherHost:      strEnv("DISPATCHER_HOST",      "127.0.0.1"),
-    dispatcherPort:      intEnv("DISPATCHER_PORT",      9000),
-
-    replyHost:           strEnv("REPLY_HOST",           "0.0.0.0"),
-    replyPort:           intEnv("REPLY_PORT",           9001),
-
     reaperOscHost:       strEnv("REAPER_OSC_HOST",      "127.0.0.1"),
     reaperOscPort:       intEnv("REAPER_OSC_PORT",      8000),
 
     reaperFeedbackHost:  strEnv("REAPER_FEEDBACK_HOST", "0.0.0.0"),
     reaperFeedbackPort:  intEnv("REAPER_FEEDBACK_PORT", 8001),
+
+    reaperWebHost:       strEnv("REAPER_WEB_HOST",      "127.0.0.1"),
+    reaperWebPort:       intEnv("REAPER_WEB_PORT",      8081),
 
     dataFile:            strEnv("DATA_FILE",            "./data/rehearsaltools.json"),
   };

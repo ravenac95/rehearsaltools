@@ -55,7 +55,11 @@ function M.new(adapter)
       return nil, "rows[1].barOffset must be 0 (bar 1 of the form)"
     end
 
-    local playhead_time = adapter.get_cursor_position()
+    -- startTime is provided by the server (pre-computed from transport state).
+    if type(data.startTime) ~= "number" then
+      return nil, "startTime is required and must be a number"
+    end
+    local playhead_time = data.startTime
     local playhead_qn   = adapter.time_to_qn(playhead_time)
 
     local positions = compute_row_positions(data.rows, playhead_qn)

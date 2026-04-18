@@ -1,0 +1,19 @@
+# reaper-kb.ini.snippet
+#
+# Append the single line below to <REAPER resource>/reaper-kb.ini.
+# This SCR line registers the rehearsaltools ReaScript as a custom action so
+# that REAPER can resolve the _RS_rehearsaltools command ID referenced in
+# reaper-osc-actions.ini.
+#
+# Format: SCR <section> <reserved> <id> "<description>" <script_path>
+#   section   4 = Main section (global)
+#   reserved  0 (always 0)
+#   id        The short command ID stem (without the _RS_ prefix)
+#   path      Path to rehearsaltools.lua, relative to the REAPER resource folder.
+#             Either copy reascripts/ into your REAPER Scripts folder, or
+#             symlink it, so that the relative path below resolves.
+#
+# Example resource-folder layout after copying:
+#   <REAPER resource>/Scripts/rehearsaltools/rehearsaltools.lua
+
+SCR 4 0 RS_rehearsaltools "Custom: rehearsaltools" Scripts/rehearsaltools/rehearsaltools.lua

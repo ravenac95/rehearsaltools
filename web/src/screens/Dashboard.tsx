@@ -48,7 +48,7 @@ export function Dashboard() {
 
       {currentTake && (
         <div className="muted" style={{ marginTop: 8 }}>
-          Current take: region #{currentTake.regionId}, starts at {currentTake.startTime.toFixed(2)}s
+          Current take: starts at {currentTake.startTime.toFixed(2)}s
         </div>
       )}
 

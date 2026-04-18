@@ -11,22 +11,26 @@ song-form sequencer without touching the laptop.
 ┌────────────────────┐      WebSocket+REST     ┌─────────────────────┐   OSC (UDP)    ┌────────────────────┐
 │  React SPA (Vite)  │ ─────────────────────── │  Node service       │ ─────────────▶ │ REAPER             │
 │  mobile-first      │                         │  (Fastify + node-   │                │ • native OSC in    │
-│                    │ ◀─────────────────────  │   osc + WS)         │ ◀───────────── │ • dispatcher       │
-└────────────────────┘     status updates      └─────────────────────┘   OSC replies  │   reascript        │
-                                                                                       └────────────────────┘
+│                    │ ◀─────────────────────  │   osc + WS)         │ ◀───────────── │ • /rehearsaltools  │
+└────────────────────┘     status updates      └─────────────────────┘   OSC feedback └────────────────────┘
+                                                       │ HTTP reads
+                                                       ▼
+                                               REAPER web remote
+                                               (/_/TRANSPORT, REGION…)
 ```
 
-Two OSC channels to REAPER:
+Two communication paths to REAPER:
 
 - **Native REAPER OSC** — driven via a `.ReaperOSC` config file. Handles
   transport (`/play`, `/stop`, `/record`), tempo (`/tempo/raw`), seek
-  (`/time`), and metronome (`/click`).
-- **Custom dispatcher** — a single ReaScript (`reaper_osc_dispatcher.lua`)
-  bound to its own UDP port. Handles region CRUD, per-region mixdown, and the
-  song-form writer via `/rt/*` addresses, each carrying a single JSON payload.
+  (`/time`), and metronome (`/click`). Also receives `/rehearsaltools` — a
+  single multiplexed address whose JSON payload names the operation via a
+  `command` field; REAPER dispatches it through one custom ReaScript action.
+- **REAPER web remote** — HTTP reads for transport state, regions, and markers
+  via REAPER's built-in web interface (`/_/TRANSPORT`, `/_/REGION`, etc.).
 
-The Node service mediates between the React SPA (REST + WS) and both OSC
-channels, and also owns the persistent section library and song-form document.
+The Node service mediates between the React SPA (REST + WS) and both paths,
+and also owns the persistent section library and song-form document.
 
 ## Features
 
@@ -48,9 +52,6 @@ channels, and also owns the persistent section library and song-form document.
 ## Prerequisites
 
 - **REAPER** (any recent version)
-- **mavriq-lua-sockets** ReaPack package (UDP support for the dispatcher
-  ReaScript). In REAPER: *Extensions → ReaPack → Browse packages*, search for
-  `mavriq-lua-sockets`, install, and restart REAPER.
 - **Node 22+** and **pnpm 10+** on the laptop that will host the service.
 - **Lua 5.4** (optional) to run the pure-Lua test suite on your machine.
 
@@ -66,25 +67,15 @@ pnpm -F web build
 
 ## REAPER setup
 
-### 1. Install the dispatcher script
+### 1. Enable the web interface
 
-Copy the contents of `reascripts/` into a folder accessible from REAPER (for
-example REAPER's `Scripts` folder, or any folder you add via *Actions →
-Show action list → New action → Load ReaScript*). The script is:
+1. Open **REAPER → Preferences → Control/OSC/web**.
+2. Under **Web browser interface**, check **Enable web browser interface**.
+3. Note the port (default **8080**). Set `REAPER_WEB_PORT` to match.
 
-```
-reascripts/reaper_osc_dispatcher.lua
-```
-
-It loads its siblings (`src/*.lua`) via relative `dofile`, so keep the folder
-layout intact.
-
-In *Actions → Show action list*, click **New action → Load ReaScript**, pick
-`reaper_osc_dispatcher.lua`, and run it. The REAPER console prints:
-
-```
-[RehearsalTools] OSC dispatcher listening on udp://0.0.0.0:9000 (replies → 127.0.0.1:9001)
-```
+> **Port collision note:** The Node server also defaults to HTTP port 8080.
+> Either set `REAPER_WEB_PORT=8081` in REAPER's web preferences, or set
+> `HTTP_PORT=8787` for the Node server, so they don't collide.
 
 ### 2. Configure REAPER's native OSC device
 
@@ -97,8 +88,21 @@ Control)**, and set:
 - **Device send port**: `8000` (REAPER sends feedback here to the service)
 
 Those defaults match the server's defaults (`REAPER_OSC_PORT=8000`,
-`REAPER_FEEDBACK_PORT=8001`). Override the server via environment variables
-(see below) if you need to change them.
+`REAPER_FEEDBACK_PORT=8001`). Override via environment variables if needed.
+
+### 3. Install the custom action
+
+A single ReaScript (`reascripts/rehearsaltools.lua`) handles every `/rt/*`
+operation via a JSON `command` field. See
+`reascripts/reaper-osc-config/README.md` for the full step-by-step guide. In
+brief:
+
+1. Copy or symlink `reascripts/` into your REAPER Scripts folder (so the
+   script lives at `<resource>/Scripts/rehearsaltools/rehearsaltools.lua`).
+2. Append the one-line `reaper-kb.ini.snippet` to `<resource>/reaper-kb.ini`.
+3. Append the one-line `reaper-osc-actions.ini.snippet` to
+   `<resource>/reaper-osc-actions.ini`.
+4. Restart REAPER.
 
 ## Run the service
 
@@ -121,48 +125,45 @@ The server prints the listening URL. On the laptop, open the UI at
 |---------------------------|----------------|------------------|
 | `HTTP_HOST`               | `0.0.0.0`      | HTTP bind address |
 | `HTTP_PORT`               | `8080`         | HTTP bind port |
-| `DISPATCHER_HOST`         | `127.0.0.1`    | REAPER dispatcher host |
-| `DISPATCHER_PORT`         | `9000`         | REAPER dispatcher UDP port |
-| `REPLY_HOST`              | `0.0.0.0`      | Host to receive dispatcher replies |
-| `REPLY_PORT`              | `9001`         | UDP port to receive dispatcher replies |
 | `REAPER_OSC_HOST`         | `127.0.0.1`    | REAPER native OSC host |
 | `REAPER_OSC_PORT`         | `8000`         | REAPER native OSC port (→ REAPER) |
 | `REAPER_FEEDBACK_HOST`    | `0.0.0.0`      | Host to receive native OSC feedback |
 | `REAPER_FEEDBACK_PORT`    | `8001`         | UDP port to receive native OSC feedback |
+| `REAPER_WEB_HOST`         | `127.0.0.1`    | REAPER web remote host |
+| `REAPER_WEB_PORT`         | `8080`         | REAPER web remote port (**see port collision note above**) |
 | `DATA_FILE`               | `./data/rehearsaltools.json` | Persistent store path |
-
-If you change any of these, update the matching field in REAPER's OSC device
-settings so the two sides agree.
 
 ## Running tests
 
 ```bash
-# Node server + React web tests (vitest)
-pnpm test
+# Node server tests (vitest)
+pnpm -F server test
 
 # Pure-Lua tests (requires Lua 5.4 on your PATH)
 cd reascripts && lua tests/test_runner.lua
 ```
 
-Lua tests cover the OSC encoder/decoder, JSON, validation, the adapter, the
-dispatcher, and every handler via a stubbed REAPER adapter. No REAPER
-installation is required to run them.
+Lua tests cover JSON, validation, the adapter, and every handler via a stubbed
+REAPER adapter. No REAPER installation is required.
 
 ## Repository layout
 
 ```
 rehearsaltools/
 ├── reascripts/                          # REAPER-side Lua code
-│   ├── reaper_osc_dispatcher.lua        # main script — runs inside REAPER
+│   ├── rehearsaltools.lua               # single custom action — multiplexes /rt/* ops
 │   ├── src/
-│   │   ├── osc.lua                      # OSC 1.0 encode/decode
 │   │   ├── json.lua                     # pure-Lua JSON
+│   │   ├── payload.lua                  # reads OSC arg from REAPER action context
+│   │   ├── dispatch.lua                 # command → handler router
 │   │   ├── validation.lua               # payload validators
 │   │   ├── reaper_api.lua               # adapter around reaper.* calls
-│   │   ├── dispatcher.lua               # address → handler routing
-│   │   └── handlers/                    # one file per /rt/* path
+│   │   └── handlers/                    # one file per command namespace
 │   ├── reaper-osc-config/
-│   │   └── RehearsalTools.ReaperOSC     # REAPER OSC device pattern file
+│   │   ├── RehearsalTools.ReaperOSC     # REAPER OSC device pattern file
+│   │   ├── reaper-osc-actions.ini.snippet  # maps /rehearsaltools OSC → action ID
+│   │   ├── reaper-kb.ini.snippet        # registers rehearsaltools.lua as action
+│   │   └── README.md                    # step-by-step setup guide
 │   └── tests/                           # pure-Lua unit tests
 │
 ├── server/                              # Node service (Fastify + node-osc)
@@ -171,7 +172,11 @@ rehearsaltools/
 │       ├── config.ts                    # env → Config
 │       ├── state.ts                     # transport + current-take cache
 │       ├── ws.ts                        # websocket broadcast hub
-│       ├── osc/                         # OSC client/server + req/reply
+│       ├── osc/                         # OSC client/server
+│       │   ├── client.ts                # OscClient, ReaperNativeClient, RtClient
+│       │   └── server.ts                # OscServerWrapper (native feedback)
+│       ├── reaper/
+│       │   └── web-remote.ts            # WebRemoteClient (HTTP reads)
 │       ├── routes/                      # Fastify route modules
 │       └── store/sections.ts            # persistent section + songform store
 │
@@ -193,5 +198,4 @@ internet.
 
 ## Stopping
 
-`Ctrl-C` in the terminal running the Node server. The REAPER dispatcher script
-terminates when its action is stopped in REAPER's action list.
+`Ctrl-C` in the terminal running the Node server.

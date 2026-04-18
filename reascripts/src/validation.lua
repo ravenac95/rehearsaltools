@@ -1,5 +1,5 @@
 -- src/validation.lua
--- Pure-Lua validation for OSC dispatcher payloads.
+-- Pure-Lua validation for OSC action payloads.
 -- No dependency on REAPER APIs.
 
 local M = {}
@@ -148,7 +148,10 @@ function M.validate_songform(body)
     return false, "regionName must be a string if provided"
   end
 
-  return true, {regionName = region_name, rows = out_rows}
+  -- startTime is optional here (can be validated in handler); pass through.
+  local start_time = body.startTime
+
+  return true, {regionName = region_name, rows = out_rows, startTime = start_time}
 end
 
 return M
