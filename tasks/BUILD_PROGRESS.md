@@ -10,7 +10,7 @@
 - TASK_REVIEW: approved
 
 ## Tasks
-- [ ] task-01-logger-module — pending
+- [x] task-01-logger-module — done
 - [ ] task-02-dispatch-logging — pending
 - [ ] task-03-handler-logging — pending
 - [ ] task-04-set-log-enabled-command — pending
