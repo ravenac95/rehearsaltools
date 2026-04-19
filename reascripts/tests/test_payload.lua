@@ -3,11 +3,20 @@
 
 local payload = dofile("src/payload.lua")
 
--- ── Helper: build a fake get_action_context that returns the given OSC arg
---    as the 7th value of a 7-value tuple.
+-- ── Helper: build a fake get_action_context that returns an OSC-wrapped
+--    JSON arg as the 8th value of an 8-value tuple. REAPER's action context
+--    exposes the raw OSC message at ctx[8]; src/osc.lua parses the
+--    `osc:/address:s=<arg>` format from that slot.
 local function make_ctx(osc_arg)
   return function()
-    return nil, nil, nil, nil, nil, nil, osc_arg
+    if osc_arg == nil then
+      return nil, nil, nil, nil, nil, nil, nil, nil
+    end
+    if osc_arg == "" then
+      return nil, nil, nil, nil, nil, nil, nil, ""
+    end
+    return nil, nil, nil, nil, nil, nil, nil,
+      "osc:/rehearsaltools:s=" .. osc_arg
   end
 end
 
@@ -54,11 +63,12 @@ describe("payload.read", function()
     assert_true(err:find("parse error") ~= nil)
   end)
 
-  it("injected context fn receives no args and returns OSC string at index 7", function()
+  it("injected context fn receives no args and returns OSC string at index 8", function()
     local called_with_args = {}
     local ctx_fn = function(...)
       called_with_args = {...}
-      return nil, nil, nil, nil, nil, nil, '{"test":true}'
+      return nil, nil, nil, nil, nil, nil, nil,
+        'osc:/rehearsaltools:s={"test":true}'
     end
     local data, err = payload.read(ctx_fn)
     assert_nil(err)

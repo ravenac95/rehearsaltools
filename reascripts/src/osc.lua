@@ -22,8 +22,13 @@ function osc.parse(context)
     return msg
 end
 
-function osc.get()
-    local is_new, name, sec, cmd, rel, res, val, ctx = reaper.get_action_context()
+--- Read the current action context and parse its OSC-wrapped trailing arg.
+--- @param get_context_fn optional injection point for tests; defaults to
+---                       reaper.get_action_context.
+function osc.get(get_context_fn)
+    get_context_fn = get_context_fn or (reaper and reaper.get_action_context)
+    if not get_context_fn then return nil end
+    local _, _, _, _, _, _, _, ctx = get_context_fn()
     if ctx == nil or ctx == '' then
         return nil
     end

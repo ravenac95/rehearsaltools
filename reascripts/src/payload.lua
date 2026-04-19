@@ -28,13 +28,12 @@ local M = {}
 --- @return tbl, nil   on success (empty table when arg is absent/empty)
 --- @return nil, err   on JSON parse error
 function M.read(get_context_fn)
-  local msg = osc.get()
+  local msg = osc.get(get_context_fn)
 
   local osc_address = msg and msg.address
-  local osc_arg = msg and msg.arg and msg.arg
+  local osc_arg = msg and msg.arg
 
   logger.debug("payload.read: osc_address= " .. tostring(osc_address) .. ", osc_arg= " .. tostring(osc_arg))
-
 
   -- Treat nil or empty string as "no payload".
   if osc_arg == nil or osc_arg == "" then
