@@ -151,17 +151,23 @@ REAPER adapter. No REAPER installation is required.
 All operations arrive as a single OSC message to the `/rehearsaltools` address.
 The JSON `command` field selects the operation.
 
-| Command | Payload fields | Returns |
-|---------|---------------|---------|
+`/rehearsaltools` is invoked in REAPER as a fire-and-forget OSC custom action,
+so OSC callers should **not** expect any reply message. The values in the
+"Internal Lua return value" column below are the return values of the Lua
+handlers (used by the Lua test suite and consulted by dispatch for error
+handling), not OSC responses sent back to the client.
+
+| Command | Payload fields | Internal Lua return value |
+|---------|---------------|---------------------------|
 | `project.new` | *(none)* | `{"ok":true}` |
 | `tempo` | `bpm` (number, 20–999) | `{"bpm":<n>}` |
 | `timesig` | `numerator`, `denominator`, `measure?` | `{"numerator":<n>,"denominator":<n>,"measure":<n>}` |
 | `mixdown.all` | `output_dir?` (string) | `{"output_dir":"...","region_count":<n>}` |
 | `songform.write` | `rows` (array), `startTime` (number), `regionName?` | `{"regionId":<n>,"startTime":<n>,"rows":[...]}` |
-| `region.new` | `name?` (string) | *(no return value)* |
-| `region.rename` | `id` (integer), `name` (string) | *(no return value)* |
+| `region.new` | `name?` (string) | *(no Lua return value)* |
+| `region.rename` | `id` (integer), `name` (string) | *(no Lua return value)* |
 | `region.play` | `id` (integer) | `{"id":<n>,"start":<n>}` |
-| `playhead.end` | *(none)* | *(no return value)* |
+| `playhead.end` | *(none)* | *(no Lua return value)* |
 | `set_log_enabled` | `enabled` (boolean) | `{"ok":true,"enabled":<bool>}` |
 
 ### Toggling REAPER console logging
