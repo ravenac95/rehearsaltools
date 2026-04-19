@@ -1,122 +1,110 @@
-# Discovery Questions
+# Planning Questions
 
-(Remaining questions whose answers shape the task breakdown. The user already resolved Q1–Q7 of the high-level architecture; these are finer-grained.)
+## Codebase Summary
 
----
+The ReaScript entry point is `reascripts/rehearsaltools.lua`. It reads the OSC payload, then calls `dispatch.run(adapter, data, script_dir)`. Dispatch (`src/dispatch.lua`) loads six handler modules via `dofile`, then routes on `payload.command` to the matching handler. Each handler follows one of two shapes:
 
-## D1: Region matching after create/rename
+- **Simple callable**: `M.new(adapter)` returns a single `function(payload)` (project, tempo, timesig, mixdown, songform).
+- **Method table**: `M.new(adapter)` returns a table of named functions (regions — new, rename, list, play, seek_to_end).
 
-**Context.** Scripts are now fire-and-forget — REAPER assigns region IDs internally and the server cannot see them directly. The REST contract says:
+All handlers receive only `adapter` (a dependency-injected wrapper around the REAPER API). There is no shared context object, no request-ID concept, and no existing logger. The only current console output lives in the top-level entry point (`rehearsaltools.lua`) and in `adapter.console(msg)` (which wraps `r.ShowConsoleMsg`).
 
-- `POST /api/regions` returns the newly-created region.
-- `PATCH /api/regions/:id` returns the renamed region.
+`adapter.console` is already defined on the adapter object (`src/reaper_api.lua` line 191). The test stub in `test_reaper_adapter.lua` already stubs `ShowConsoleMsg` into the calls log. Handler tests (`test_handlers.lua`) use a hand-rolled `make_adapter()` stub that does NOT currently have a `console` method — any logging approach that routes through the adapter would require adding it there.
 
-So the server sends `/rt/region/new { name }` (or `/rt/region/rename { id, name }`), then must refetch `/_/REGION` and identify which row in the response is the one the user just touched.
-
-**Options.**
-
-- **A) Match by name.** After `new`, the script writes a region whose name the server knows. The server refetches and returns the row whose name matches. Requires names to be unique within the UI's scope; already true for this app's usage. Fails if the user created two regions with the same name in REAPER directly.
-- **B) Match by highest ID (for `new`) / pass-through ID (for `rename`).** After `new`, server refetches and returns the region with the highest numeric id (regions are assigned monotonically by REAPER). For `rename`, the server already knows the id the user specified in the URL, so it refetches and returns the row whose id matches. Simpler, but "highest id" is fragile if REAPER reclaims ids after deletion.
-- **C) Return the full list, let the client pick.** Change the response from `{ region }` to `{ regions }`. Forces a small SPA change; loses the immediate "here's your new region" feedback.
-
-**Recommendation:** **B**. Pass-through ID for rename is trivially reliable. For new, matching by highest ID is a one-line `regions.sort((a, b) => b.id - a.id)[0]`. Name-match (A) is brittle if the same name exists. (C) churns the SPA for no real gain.
+Key structural facts:
+- Every handler file resolves its own `script_dir` via `reaper.get_action_context()` at module load time, then `dofile`s `validation.lua`.
+- A new `src/logger.lua` module would need the same `script_dir`-based loading pattern, or it would need to be passed in as a dependency (like the adapter).
+- `dispatch.run` is the single choke point that both loads all handlers and holds `script_dir` and `adapter` — the cleanest injection site.
+- No `GetExtState`/`SetExtState` calls exist anywhere today.
 
 ---
 
-## D2: SPA — `currentTake.regionId` is referenced
+## Questions
 
-**Context.** Removing `regionId` from `currentTake` (PRD says `record-take` only needs `startTime`) will break:
+### Q1: Where should the "logging enabled" flag live?
 
-- `web/src/api/client.ts:21` — `interface Take { regionId: number; startTime: number }`
-- `web/src/store.ts:87-88` — reads `d.regionId` from the `songform:written` message
-- `web/src/screens/Dashboard.tsx:51` — displays "region #{currentTake.regionId}"
+**Context:** Three realistic options exist given the codebase. A module-level constant is simplest but requires a code edit to toggle. `reaper.GetExtState` lets REAPER persist the flag between sessions without code changes and is already stubbed in `test_reaper_adapter.lua` (`ShowConsoleMsg` is there; `GetExtState` would need adding). A field on the adapter is the most test-friendly but requires the adapter to know about logging concerns.
 
-**Options.**
+**Question:** Which mechanism should gate whether logs are emitted?
 
-- **A) Drop `regionId` everywhere.** Update the `Take` type to `{ startTime: number }`. Update Dashboard copy to show just the start time (e.g. "Current take: starts at {startTime}s"). The `songform:written` websocket payload loses `regionId`. Simplest; SPA change is small.
-- **B) Keep `regionId` optional.** Server still returns it when it can (by matching the freshly-created region from `/_/REGION`). When absent, SPA shows "starts at …" only. Preserves richer UI copy but adds a lookup step the server doesn't otherwise need.
+**Options:**
 
-**Recommendation:** **A**. Drop it. The UI copy "starts at Xs" is adequate, and the server has no reason to re-derive a region id it doesn't otherwise use.
-
----
-
-## D3: Action script file layout
-
-**Context.** The PRD says scripts go in `reascripts/actions/`. The existing repo has `reascripts/reaper_osc_dispatcher.lua` at the top of `reascripts/` plus `reascripts/src/` for modules. `reascripts/src/handlers/*.lua` exist and will stay.
-
-The ini snippet paths must match wherever the scripts live, so this decision cascades into `reaper-osc-actions.ini.snippet` and `reaper-kb.ini.snippet`.
-
-**Options.**
-
-- **A) New subdirectory `reascripts/actions/`.** Clean separation: one folder for REAPER-registered entry points, another (`src/`) for shared library code. Ini snippets reference `reascripts/actions/rt_*.lua` — clear to the user where each address lives.
-- **B) Top-level `reascripts/`.** Matches the previous convention of putting entry points next to `reaper_osc_dispatcher.lua` (now deleted). Nine more `.lua` files clutter the top directory.
-
-**Recommendation:** **A**. The `actions/` folder is self-documenting and the ini snippets become easier to read. Nine entry-point files at the top level would be noisy.
+- A) A `LOG_ENABLED = true/false` constant at the top of `src/logger.lua` — simplest, requires editing the file to toggle.
+- B) `reaper.GetExtState("rehearsaltools", "log_enabled")` read once at script startup — persists across REAPER sessions, togglable without code changes via a small companion action or REAPER's ext-state API.
+- C) A field passed into the logger at construction time (e.g., `logger.new({ enabled = true })`), with the value hard-coded in `rehearsaltools.lua` for now — clean seam for future extension, easy to stub in tests.
 
 ---
 
-## D4: `RtClient` vs extending `OscClient`
+### Q2: How should the logger be injected into handlers?
 
-**Context.** Today `server/src/osc/client.ts` exports `OscClient` (raw send) and `ReaperNativeClient` (transport helpers). The PRD wants a way to send `/rt/*` addresses with a single JSON-string arg on the **same** REAPER OSC port as the native client.
+**Context:** Handlers currently receive only `adapter`. Adding a second parameter would change every `M.new(adapter)` signature. The alternative is to bundle a `log` function onto the adapter itself (adapter already has `adapter.console`), or to have handlers load the logger themselves via `dofile`/script_dir (the same pattern used for `validation`). Dispatch (`dispatch.dispatch`) is the one place that calls all six `M.new(adapter)` calls, so signature changes are localized there.
 
-**Options.**
+**Question:** How should the logger reach handler code?
 
-- **A) New `RtClient` class.** Takes an `OscClient`; exposes one method, `send(address, payload: object)`, which serialises to JSON and fires one OSC string arg. Parallel to `ReaperNativeClient`. Clear separation: native vs `/rt/*`.
-- **B) Add a `sendRt(address, payload)` method to `ReaperNativeClient`.** Since both go on the same port, one client is enough. Slightly more coupling but fewer moving parts.
-- **C) Just use the raw `OscClient` inline where needed.** No wrapper at all; each route calls `osc.send("/rt/region/new", JSON.stringify({name}))`. Minimal code, but JSON serialisation scattered across routes.
+**Options:**
 
-**Recommendation:** **A**. A dedicated `RtClient` mirrors `ReaperNativeClient`'s shape and keeps the JSON-string convention encapsulated. Tests stub a single object per concern.
-
----
-
-## D5: Web-remote fetch module — shape and error handling
-
-**Context.** REAPER's web remote runs on `http://<host>:<port>/_/<COMMAND>` and returns plain text (tab-separated, newline-delimited). Node 22 has global `fetch`. Responses are small (< 10 KB even for large projects).
-
-**Options.**
-
-- **A) Class `WebRemoteClient` with one method per command.** Constructor takes host+port and an optional fetch impl (for tests). Methods: `getTransport()`, `getBeatPos()`, `listRegions()`, `listMarkers()`. Parsers live alongside as private helpers. Tests inject a fake fetch that returns fixture strings.
-- **B) Plain async functions module.** Export `getTransport(baseUrl)`, etc. No class. Tests import the parsers directly and call them with fixture strings. Fetch is wrapped only at the outermost layer.
-
-Timeout/retry: localhost; use 2 s timeout via `AbortSignal.timeout(2000)`. No retry — failure surfaces as a 502 from the route.
-
-**Recommendation:** **A**. Class matches the shape of `OscClient`/`ReaperNativeClient`/`RtClient`; tests stay symmetric. Parsers are still independently-callable pure functions so test fixtures stay simple.
+- A) Add a `logger` second argument to every handler's `M.new(adapter, logger)` — explicit, testable, requires updating all six handlers and `dispatch.dispatch`.
+- B) Add `adapter.log(level, msg)` / `adapter.log_enabled` directly to the adapter object — no signature changes, handlers already have `adapter`, test stubs just need a `log` no-op added to `make_adapter()`.
+- C) Handlers `dofile` the logger themselves (same pattern as `validation`) — no signature change, but the logger reads its own enabled flag and each handler independently loads it.
 
 ---
 
-## D6: ReaperOSC `TIME` feedback pattern
+### Q3: What log points should be covered, and at what granularity?
 
-**Context.** The existing `RehearsalTools.ReaperOSC` declares `PLAY_STATE`, `TEMPO`, `BEAT`, `TIMESIG_*`. The PRD asks to add cursor-position feedback so the server can stream playhead position into `transport.position` without polling the web remote.
+**Context:** The request says "lots of logging for now." The natural points in the dispatch flow are: (1) request received with command name, (2) pre-handler with stripped payload, (3) post-handler with result or error, (4) inside individual handlers at key decision points (validation failure, adapter calls made, computed values). Points 1–3 can be done entirely in `dispatch.lua`. Point 4 requires touching each handler file.
 
-REAPER's OSC feedback keys for position:
+**Question:** Which log points are required for this initial pass?
 
-- `TIME`  → seconds since project start
-- `BEAT` → bar.beat string (already emitted)
-- `POSITION_BEATS` → full beat position as float
+**Options:**
 
-**Options.**
-
-- **A) Add only `TIME` pattern (seconds).** One line in the `.ReaperOSC` file. Server's state reducer maps `/time` events to `transport.position`. Simplest; covers the UI's needs (position is displayed in seconds).
-- **B) Add `TIME` and `POSITION_BEATS`.** Also feed the beat display if the UI shows bar.beat. Slight noise in the feedback stream.
-
-**Recommendation:** **A**. The SPA's Dashboard shows position in seconds. Beat info already arrives through the existing `BEAT` pattern.
+- A) **Dispatch-only** — log command received, payload summary, result/error at the dispatch layer only. Zero handler file changes beyond adding the logger dependency.
+- B) **Dispatch + handler boundaries** — dispatch logs as above; each handler also logs at entry (payload shape) and exit (result or error string). Touches all six handler files.
+- C) **Full verbose** — everything in B, plus intra-handler logs: validation outcome, each significant adapter call (e.g., "setting tempo to 140 bpm", "creating region 'intro' at t=10.0"), computed values in songform. Touches all six handler files more extensively.
 
 ---
 
-## D7: node-osc types
+### Q4: Should payload bodies be included in log output?
 
-**Context.** `server/src/osc/client.ts:8` imports `Client` from `node-osc` and `server.ts:7` imports `Server`. Existing code already uses `any` in a few places (`msg: OscMessage`). Adding a new `RtClient` won't introduce new type requirements beyond what's already there.
+**Context:** Payloads are small JSON objects (BPM values, region names, output directories, song-form rows). The `songform.write` payload can be the largest — potentially dozens of rows, each with 4 fields. Region names and output directories are user-supplied strings. There is no authentication or PII concern identified, but output_dir paths and region names appear in log output and may be noise.
 
-**Question:** Do we need to add a `node-osc.d.ts` ambient declaration, or is the existing setup fine?
+**Question:** Should full payload contents be logged, or only a summary (command name + top-level key list)?
 
-**Recommendation:** No change. Keep whatever types are already in play. If tsc complains during implementation, fix it then — don't pre-emptively invent types.
+**Options:**
+
+- A) Log full payload bodies (serialized to a compact string) — maximum debuggability.
+- B) Log only the command name and the set of top-level keys present (e.g., `"tempo {bpm}"`) — enough to confirm routing without verbosity.
+- C) Log full bodies only when an error occurs; log key-list only on success.
 
 ---
 
-## D8: Cleanup of now-unused feedback routing
+### Q5: Should timing / duration be included in log output?
 
-**Context.** The existing `OscServerWrapper` has three branches: `/rt/reply/*`, `/rt/event/*`, and native. After this refactor, only native remains.
+**Context:** Lua 5.4 (used here — test runner says "pure-Lua 5.4") provides `os.clock()` and `os.time()`. A per-dispatch wall-clock duration would help identify slow handlers (mixdown/render can take seconds). This is a small addition if the logger captures a start timestamp before the handler call and logs elapsed time afterward.
 
-**Question:** Should `OscServerWrapper` be simplified to just emit native, or left with stub branches?
+**Question:** Should each dispatched command log how long it took to execute?
 
-**Recommendation:** Simplify. Delete `onReply`/`onEvent` from the interface; keep only `onNative`. Rename it to `NativeFeedbackServer` or leave the filename and just shrink the class. (Non-blocking — implementer decides.)
+**Options:**
+
+- A) Yes — log elapsed time (ms) for every dispatch.
+- B) No — keep it simple for now.
+
+---
+
+### Q6: Should `ShowConsoleMsg` be wrapped for testability, or is the existing `adapter.console` enough?
+
+**Context:** `adapter.console` already calls `r.ShowConsoleMsg` and is indirectly testable (the `ShowConsoleMsg` stub exists in `test_reaper_adapter.lua`). If the logger is injected via the adapter (Q2 option B), test coverage of logging is straightforward — add a `console` (or `log`) call recorder to `make_adapter()`. If the logger is a standalone module that calls `reaper.ShowConsoleMsg` directly, it would need its own stub mechanism in tests, similar to how `payload.lua` guards on `reaper and reaper.get_action_context`.
+
+**Question:** Should the logger call `adapter.console` (going through the adapter's `ShowConsoleMsg` wrapper) or call `reaper.ShowConsoleMsg` directly with the same guard pattern used in `payload.lua` and handlers?
+
+**Options:**
+
+- A) Call `adapter.console` — reuses existing abstraction, fully testable without extra stubs.
+- B) Call `reaper.ShowConsoleMsg` directly, guarded by `reaper and reaper.ShowConsoleMsg` — standalone module, no adapter dependency, but requires adding a stub to `make_adapter()` tests to verify log calls.
+
+---
+
+### Q7: TDD mode
+
+**Context:** The project has a working pure-Lua test harness (`tests/test_runner.lua`, run with `lua tests/test_runner.lua` from the `reascripts/` directory). Test files follow the `tests/test_*.lua` naming convention. Existing tests cover the adapter, handlers, dispatch, payload, and validation.
+
+**Question:** Do you want TDD mode for this build? If yes, the task implementer will write failing tests before implementation code for each task (RED → GREEN → refactor).
