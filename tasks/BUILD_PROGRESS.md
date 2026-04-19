@@ -1,6 +1,6 @@
 # Build Progress
 
-## Status: IMPLEMENTING
+## Status: COMPLETE
 
 ## Pipeline State
 - BRAINSTORM: skipped (plan written manually in plan mode)
@@ -21,7 +21,7 @@
 9. [x] task-09-pattern-parser.md
 10. [x] task-10-song-editor-primitives.md
 11. [x] task-11-song-editor-screen.md
-12. task-12-smoke-test.md
+12. [x] task-12-smoke-test.md
 
 ## Notes
 - Plan file: /root/.claude/plans/we-now-have-some-peppy-finch.md
