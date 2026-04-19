@@ -5,6 +5,7 @@ local script_dir = (reaper and reaper.get_action_context)
   and ({reaper.get_action_context()})[2]:match("^(.*[\\/])")
   or ""
 local validation = dofile(script_dir .. "src/validation.lua")
+local logger = dofile(script_dir .. "src/logger.lua")
 
 local M = {}
 
@@ -51,45 +52,74 @@ local LARGE_OFFSET = 60 * 60 * 24  -- 24 hours
 function M.new(adapter)
   return {
     new = function(payload)
+      logger.debug("regions.new: enter, name=%s", tostring(payload.name))
       local ok, data = validation.validate_region_new(payload)
-      if not ok then return nil, data end
-
+      if not ok then
+        logger.error("regions.new: validation error=%s", tostring(data))
+        return nil, data
+      end
       local start_t = adapter.get_cursor_position()
       local end_t   = start_t + LARGE_OFFSET
+      logger.debug("regions.new: add_region name=%q start=%.4g end=%.4g",
+        data.name, start_t, end_t)
       adapter.add_region(start_t, end_t, data.name)
       adapter.update_arrange()
+      logger.debug("regions.new: ok")
     end,
 
     rename = function(payload)
+      logger.debug("regions.rename: enter, id=%s name=%s",
+        tostring(payload.id), tostring(payload.name))
       local ok, data = validation.validate_region_rename(payload)
-      if not ok then return nil, data end
+      if not ok then
+        logger.error("regions.rename: validation error=%s", tostring(data))
+        return nil, data
+      end
 
       local region = find_region_by_id(adapter, data.id)
-      if not region then return nil, "region not found: " .. data.id end
-
+      if not region then
+        logger.error("regions.rename: region not found id=%s", tostring(data.id))
+        return nil, "region not found: " .. data.id
+      end
+      logger.debug("regions.rename: found region id=%s, calling set_region", tostring(data.id))
       adapter.set_region(data.id, region.start, region.stop, data.name)
       adapter.update_arrange()
+      logger.debug("regions.rename: ok")
     end,
 
     list = function(_payload)
-      return {regions = adapter.list_regions()}
+      logger.debug("regions.list: enter")
+      local regions = adapter.list_regions()
+      logger.debug("regions.list: ok, count=%d", #regions)
+      return {regions = regions}
     end,
 
     play = function(payload)
+      logger.debug("regions.play: enter, id=%s", tostring(payload.id))
       local ok, data = validation.validate_region_id(payload)
-      if not ok then return nil, data end
+      if not ok then
+        logger.error("regions.play: validation error=%s", tostring(data))
+        return nil, data
+      end
 
       local region = find_region_by_id(adapter, data.id)
-      if not region then return nil, "region not found: " .. data.id end
-
+      if not region then
+        logger.error("regions.play: region not found id=%s", tostring(data.id))
+        return nil, "region not found: " .. data.id
+      end
+      logger.debug("regions.play: seeking to start=%.4g and playing", region.start)
       adapter.set_edit_cursor(region.start, true, false)
       adapter.action_play()
+      logger.debug("regions.play: ok")
       return {id = data.id, start = region.start}
     end,
 
     seek_to_end = function(_payload)
+      logger.debug("regions.seek_to_end: enter")
       local end_t = item_end_max(adapter)
+      logger.debug("regions.seek_to_end: end_t=%.4g, calling set_edit_cursor", end_t)
       adapter.set_edit_cursor(end_t, true, false)
+      logger.debug("regions.seek_to_end: ok")
     end,
   }
 end
