@@ -17,7 +17,7 @@
 5. [x] task-05-frontend-types-store-api.md
 6. [x] task-06-theme-system.md
 7. [x] task-07-shared-ui-primitives.md
-8. task-08-retheme-existing-screens.md
+8. [x] task-08-retheme-existing-screens.md
 9. task-09-pattern-parser.md
 10. task-10-song-editor-primitives.md
 11. task-11-song-editor-screen.md
