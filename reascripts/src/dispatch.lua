@@ -70,6 +70,13 @@ function M.dispatch(adapter, payload, handlers, logger)
 
   if command == "set_log_enabled" then
     local enabled = args.enabled == true or args.enabled == "true" or args.enabled == "1"
+    -- Log the toggle using the module-level logger BEFORE changing the state,
+    -- so the message appears if logging was already enabled going in.
+    if _module_logger then
+      _module_logger.info("dispatch: logging %s via set_log_enabled",
+                          enabled and "enabled" or "disabled")
+    end
+    -- Also log via the passed-in logger (for test stubs / callers who inject one)
     logger.info("dispatch: logging %s via set_log_enabled",
                 enabled and "enabled" or "disabled")
     if _module_logger then

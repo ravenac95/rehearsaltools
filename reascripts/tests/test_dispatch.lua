@@ -241,3 +241,103 @@ describe("dispatch.dispatch emits log calls", function()
     assert_true(found_error, "expected ERROR log entry for unknown command")
   end)
 end)
+
+-- ── Tests: set_log_enabled ExtState side-effect ───────────────────────────────
+
+describe("dispatch set_log_enabled ExtState side-effect", function()
+  it("calls SetExtState('rehearsaltools','log_enabled','1',true) when enabled=true", function()
+    local ext_calls = {}
+    local old_reaper = reaper  -- nil in tests
+    reaper = {
+      get_action_context = function()
+        return nil, "./", nil, nil, nil, nil, nil
+      end,
+      GetExtState = function() return "" end,
+      SetExtState = function(section, key, value, persist)
+        table.insert(ext_calls, {section=section, key=key, value=value, persist=persist})
+      end,
+      ShowConsoleMsg = function() end,
+    }
+
+    -- Re-dofile dispatch so it picks up the new reaper stub
+    local d = dofile("src/dispatch.lua")
+    local stubs = make_stubs()
+    d.dispatch({}, {command="set_log_enabled", enabled=true}, stubs)
+
+    reaper = old_reaper  -- restore
+
+    local found = false
+    for _, c in ipairs(ext_calls) do
+      if c.section == "rehearsaltools" and c.key == "log_enabled"
+         and c.value == "1" and c.persist == true then
+        found = true
+      end
+    end
+    assert_true(found, "expected SetExtState call with value='1'")
+  end)
+
+  it("calls SetExtState with value='' when enabled=false", function()
+    local ext_calls = {}
+    local old_reaper = reaper
+    reaper = {
+      get_action_context = function()
+        return nil, "./", nil, nil, nil, nil, nil
+      end,
+      GetExtState = function() return "" end,
+      SetExtState = function(section, key, value, persist)
+        table.insert(ext_calls, {section=section, key=key, value=value, persist=persist})
+      end,
+      ShowConsoleMsg = function() end,
+    }
+
+    local d = dofile("src/dispatch.lua")
+    local stubs = make_stubs()
+    d.dispatch({}, {command="set_log_enabled", enabled=false}, stubs)
+
+    reaper = old_reaper
+
+    local found = false
+    for _, c in ipairs(ext_calls) do
+      if c.section == "rehearsaltools" and c.key == "log_enabled"
+         and c.value == "" then
+        found = true
+      end
+    end
+    assert_true(found, "expected SetExtState call with value=''")
+  end)
+
+  it("logs the toggle BEFORE writing SetExtState", function()
+    local event_order = {}
+    local old_reaper = reaper
+    reaper = {
+      get_action_context = function()
+        return nil, "./", nil, nil, nil, nil, nil
+      end,
+      GetExtState = function() return "1" end,  -- logging enabled going in
+      SetExtState = function(section, key, value, persist)
+        table.insert(event_order, "SetExtState:" .. tostring(value))
+      end,
+      ShowConsoleMsg = function(s)
+        table.insert(event_order, "ShowConsoleMsg")
+      end,
+    }
+
+    local d = dofile("src/dispatch.lua")
+    local stubs = make_stubs()
+    d.dispatch({}, {command="set_log_enabled", enabled=false}, stubs)
+
+    reaper = old_reaper
+
+    -- The ShowConsoleMsg (the toggle log line) should appear before SetExtState
+    local msg_idx, set_idx
+    for i, e in ipairs(event_order) do
+      if e == "ShowConsoleMsg" and not msg_idx then msg_idx = i end
+      if e:find("SetExtState") and not set_idx then set_idx = i end
+    end
+    assert_not_nil(msg_idx, "expected a ShowConsoleMsg call")
+    assert_not_nil(set_idx, "expected a SetExtState call")
+    assert_true(msg_idx < set_idx,
+      string.format("ShowConsoleMsg (idx %s) should precede SetExtState (idx %s)",
+        tostring(msg_idx), tostring(set_idx)))
+  end)
+end)
