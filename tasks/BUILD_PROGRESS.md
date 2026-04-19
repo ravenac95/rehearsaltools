@@ -1,16 +1,19 @@
 # Build Progress
 
-## Status: PLANNING
+## Status: IMPLEMENTING
 
 ## Pipeline State
 - BRAINSTORM: skipped
-- DISCOVERY: in-progress
-- USER_Q&A: pending
-- GENERATE: pending
-- TASK_REVIEW: pending
+- DISCOVERY: done
+- USER_Q&A: done
+- GENERATE: done
+- TASK_REVIEW: approved
 
 ## Tasks
-_(populated after GENERATE)_
+- [ ] task-01-logger-module — pending
+- [ ] task-02-dispatch-logging — pending
+- [ ] task-03-handler-logging — pending
+- [ ] task-04-set-log-enabled-command — pending
 
 ## Notes
 - Feature: add `reaper.ShowConsoleMsg` logging to every ReaScript handler, with verbose logging gated by a global enable flag.
