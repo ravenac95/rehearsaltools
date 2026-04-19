@@ -13,7 +13,7 @@
 - [x] task-01-logger-module — done
 - [x] task-02-dispatch-logging — done
 - [x] task-03-handler-logging — done
-- [ ] task-04-set-log-enabled-command — pending
+- [x] task-04-set-log-enabled-command — done
 
 ## Notes
 - Feature: add `reaper.ShowConsoleMsg` logging to every ReaScript handler, with verbose logging gated by a global enable flag.
