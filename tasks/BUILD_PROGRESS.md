@@ -18,7 +18,7 @@
 6. [x] task-06-theme-system.md
 7. [x] task-07-shared-ui-primitives.md
 8. [x] task-08-retheme-existing-screens.md
-9. task-09-pattern-parser.md
+9. [x] task-09-pattern-parser.md
 10. task-10-song-editor-primitives.md
 11. task-11-song-editor-screen.md
 12. task-12-smoke-test.md
