@@ -168,3 +168,76 @@ describe("dispatch.dispatch payload stripping", function()
     assert_eq(calls[1].payload, {})
   end)
 end)
+
+-- ── Logger stub factory ───────────────────────────────────────────────────────
+
+local function make_logger()
+  local calls = {}
+  local log = {}
+  function log.info(fmt, ...)  table.insert(calls, {level="INFO",  msg=string.format(fmt, ...)}) end
+  function log.debug(fmt, ...) table.insert(calls, {level="DEBUG", msg=string.format(fmt, ...)}) end
+  function log.error(fmt, ...) table.insert(calls, {level="ERROR", msg=string.format(fmt, ...)}) end
+  function log.dump(label, _)  table.insert(calls, {level="DUMP",  msg=label}) end
+  return log, calls
+end
+
+-- ── Tests: set_log_enabled routing ───────────────────────────────────────────
+
+describe("dispatch.dispatch set_log_enabled command", function()
+  local adapter = {}
+
+  it("routes set_log_enabled and returns ok=true with enabled=true", function()
+    local stubs = make_stubs()
+    local log, _ = make_logger()
+    local res, err = dispatch.dispatch(adapter, {command="set_log_enabled", enabled=true}, stubs, log)
+    assert_nil(err)
+    assert_eq(res.ok, true)
+    assert_eq(res.enabled, true)
+  end)
+
+  it("routes set_log_enabled with enabled=false", function()
+    local stubs = make_stubs()
+    local log, _ = make_logger()
+    local res, err = dispatch.dispatch(adapter, {command="set_log_enabled", enabled=false}, stubs, log)
+    assert_nil(err)
+    assert_eq(res.ok, true)
+    assert_eq(res.enabled, false)
+  end)
+
+  it("does not call any handler stub for set_log_enabled", function()
+    local stubs, handler_calls = make_stubs()
+    local log, _ = make_logger()
+    dispatch.dispatch(adapter, {command="set_log_enabled", enabled=true}, stubs, log)
+    assert_eq(#handler_calls, 0)
+  end)
+end)
+
+-- ── Tests: logger calls emitted ───────────────────────────────────────────────
+
+describe("dispatch.dispatch emits log calls", function()
+  local adapter = {}
+
+  it("emits INFO log with command name", function()
+    local stubs = make_stubs()
+    local log, lcalls = make_logger()
+    dispatch.dispatch(adapter, {command="tempo", bpm=120}, stubs, log)
+    local found_info = false
+    for _, c in ipairs(lcalls) do
+      if c.level == "INFO" and c.msg:find("tempo") then
+        found_info = true
+      end
+    end
+    assert_true(found_info, "expected INFO log entry containing 'tempo'")
+  end)
+
+  it("emits ERROR log for unknown command", function()
+    local stubs = make_stubs()
+    local log, lcalls = make_logger()
+    dispatch.dispatch(adapter, {command="bogus"}, stubs, log)
+    local found_error = false
+    for _, c in ipairs(lcalls) do
+      if c.level == "ERROR" then found_error = true end
+    end
+    assert_true(found_error, "expected ERROR log entry for unknown command")
+  end)
+end)
