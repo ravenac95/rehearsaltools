@@ -47,7 +47,7 @@ end
 --- Returns whatever the handler returns, or (nil, err) on routing failure.
 --- `logger` is optional — defaults to a no-op stub.
 function M.dispatch(adapter, payload, handlers, logger)
-  logger = logger or {
+  logger = logger or _module_logger or {
     info  = function() end,
     debug = function() end,
     error = function() end,
@@ -70,13 +70,8 @@ function M.dispatch(adapter, payload, handlers, logger)
 
   if command == "set_log_enabled" then
     local enabled = args.enabled == true or args.enabled == "true" or args.enabled == "1"
-    -- Log the toggle using the module-level logger BEFORE changing the state,
-    -- so the message appears if logging was already enabled going in.
-    if _module_logger then
-      _module_logger.info("dispatch: logging %s via set_log_enabled",
-                          enabled and "enabled" or "disabled")
-    end
-    -- Also log via the passed-in logger (for test stubs / callers who inject one)
+    -- Log the toggle BEFORE changing the state, so the message appears if
+    -- logging was already enabled going in.
     logger.info("dispatch: logging %s via set_log_enabled",
                 enabled and "enabled" or "disabled")
     if _module_logger then
@@ -193,9 +188,7 @@ function M.run(adapter, payload, repo_root)
     mixdown  = dofile(repo_root .. "src/handlers/mixdown.lua"),
     songform = dofile(repo_root .. "src/handlers/songform.lua"),
   }
-  local _ok, logger = pcall(dofile, repo_root .. "src/logger.lua")
-  if not _ok then logger = nil end
-  return M.dispatch(adapter, payload, handlers, logger)
+  return M.dispatch(adapter, payload, handlers)
 end
 
 return M
