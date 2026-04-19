@@ -54,6 +54,23 @@ function M.dispatch(adapter, payload, handlers, logger)
     dump  = function() end,
   }
 
+  -- Skip argument computation (keys_list/encode_payload) when the logger
+  -- exposes an is_enabled() check that returns false. Test stubs without
+  -- is_enabled always pass through — their recorders still fire.
+  local function active()
+    if type(logger.is_enabled) ~= "function" then return true end
+    return logger.is_enabled() == true
+  end
+  local function log_handler_error(herr)
+    if not active() then return end
+    logger.error("dispatch: handler error=%s | payload=%s",
+                 tostring(herr), encode_payload(payload))
+  end
+  local function log_result_keys(result)
+    if not active() then return end
+    logger.debug("dispatch: result keys={%s}", keys_list(result))
+  end
+
   if type(payload) ~= "table" then
     return nil, "payload must be a table"
   end
@@ -66,7 +83,9 @@ function M.dispatch(adapter, payload, handlers, logger)
 
   -- Entry log (after command is confirmed to be a string)
   logger.info("dispatch: command=%s", command)
-  logger.debug("dispatch: payload keys={%s}", keys_list(args))
+  if active() then
+    logger.debug("dispatch: payload keys={%s}", keys_list(args))
+  end
 
   if command == "set_log_enabled" then
     local enabled = args.enabled == true or args.enabled == "true" or args.enabled == "1"
@@ -85,57 +104,57 @@ function M.dispatch(adapter, payload, handlers, logger)
   if command == "project.new" then
     local result, herr = handlers.project.new(adapter)(args)
     if herr then
-      logger.error("dispatch: handler error=%s | payload=%s", tostring(herr), encode_payload(payload))
+      log_handler_error(herr)
       return result, herr
     end
-    logger.debug("dispatch: result keys={%s}", keys_list(result))
+    log_result_keys(result)
     return result
   end
 
   if command == "tempo" then
     local result, herr = handlers.tempo.new(adapter)(args)
     if herr then
-      logger.error("dispatch: handler error=%s | payload=%s", tostring(herr), encode_payload(payload))
+      log_handler_error(herr)
       return result, herr
     end
-    logger.debug("dispatch: result keys={%s}", keys_list(result))
+    log_result_keys(result)
     return result
   end
 
   if command == "timesig" then
     local result, herr = handlers.timesig.new(adapter)(args)
     if herr then
-      logger.error("dispatch: handler error=%s | payload=%s", tostring(herr), encode_payload(payload))
+      log_handler_error(herr)
       return result, herr
     end
-    logger.debug("dispatch: result keys={%s}", keys_list(result))
+    log_result_keys(result)
     return result
   end
 
   if command == "mixdown.all" then
     local result, herr = handlers.mixdown.new(adapter)(args)
     if herr then
-      logger.error("dispatch: handler error=%s | payload=%s", tostring(herr), encode_payload(payload))
+      log_handler_error(herr)
       return result, herr
     end
-    logger.debug("dispatch: result keys={%s}", keys_list(result))
+    log_result_keys(result)
     return result
   end
 
   if command == "songform.write" then
     local result, herr = handlers.songform.new(adapter)(args)
     if herr then
-      logger.error("dispatch: handler error=%s | payload=%s", tostring(herr), encode_payload(payload))
+      log_handler_error(herr)
       return result, herr
     end
-    logger.debug("dispatch: result keys={%s}", keys_list(result))
+    log_result_keys(result)
     return result
   end
 
   if command == "region.new" then
     local result, herr = handlers.regions.new(adapter).new(args)
     if herr then
-      logger.error("dispatch: handler error=%s | payload=%s", tostring(herr), encode_payload(payload))
+      log_handler_error(herr)
       return result, herr
     end
     logger.debug("dispatch: result=(nil)")
@@ -145,7 +164,7 @@ function M.dispatch(adapter, payload, handlers, logger)
   if command == "region.rename" then
     local result, herr = handlers.regions.new(adapter).rename(args)
     if herr then
-      logger.error("dispatch: handler error=%s | payload=%s", tostring(herr), encode_payload(payload))
+      log_handler_error(herr)
       return result, herr
     end
     logger.debug("dispatch: result=(nil)")
@@ -155,17 +174,17 @@ function M.dispatch(adapter, payload, handlers, logger)
   if command == "region.play" then
     local result, herr = handlers.regions.new(adapter).play(args)
     if herr then
-      logger.error("dispatch: handler error=%s | payload=%s", tostring(herr), encode_payload(payload))
+      log_handler_error(herr)
       return result, herr
     end
-    logger.debug("dispatch: result keys={%s}", keys_list(result))
+    log_result_keys(result)
     return result
   end
 
   if command == "playhead.end" then
     local result, herr = handlers.regions.new(adapter).seek_to_end(args)
     if herr then
-      logger.error("dispatch: handler error=%s | payload=%s", tostring(herr), encode_payload(payload))
+      log_handler_error(herr)
       return result, herr
     end
     logger.debug("dispatch: result=(nil)")
@@ -173,7 +192,9 @@ function M.dispatch(adapter, payload, handlers, logger)
   end
 
   local err_msg = "unknown command: " .. command
-  logger.error("dispatch: %s | payload=%s", err_msg, encode_payload(payload))
+  if active() then
+    logger.error("dispatch: %s | payload=%s", err_msg, encode_payload(payload))
+  end
   return nil, err_msg
 end
 
