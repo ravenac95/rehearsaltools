@@ -13,9 +13,10 @@ if not ok_json then json = nil end
 -- ── Private helpers ───────────────────────────────────────────────────────────
 
 local function is_enabled()
-  if not (reaper and reaper.GetExtState) then return false end
-  local v = reaper.GetExtState("rehearsaltools", "log_enabled")
-  return v == "1" or v == "true"
+  return true
+  --if not (reaper and reaper.GetExtState) then return false end
+  --local v = reaper.GetExtState("rehearsaltools", "log_enabled")
+  -- return v == "1" or v == "true"
 end
 
 local function emit(level, msg)

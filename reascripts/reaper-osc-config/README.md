@@ -63,7 +63,7 @@ OSC-actions mapping file:
 
 ```bash
 cat reaper-osc-actions.ini.snippet >> \
-    ~/Library/Application\ Support/REAPER/reaper-osc-actions.ini
+    ~/Library/Application\ Support/REAPER/OSC/reaper-osc-actions.ini
 ```
 
 Create the file if it does not exist — REAPER will pick it up on next start.

@@ -10,6 +10,8 @@ local payload_mod = dofile(script_dir .. "src/payload.lua")
 local adapter     = dofile(script_dir .. "src/reaper_api.lua")
 local dispatch    = dofile(script_dir .. "src/dispatch.lua")
 
+reaper.ShowConsoleMsg("[rehearsaltools] received\n")
+
 local data, err = payload_mod.read()
 if err then
   reaper.ShowConsoleMsg("[rehearsaltools] payload error: " .. err .. "\n")
