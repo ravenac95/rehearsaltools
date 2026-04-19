@@ -22,6 +22,7 @@ import regionsRoutes   from "./routes/regions.js";
 import mixdownRoutes   from "./routes/mixdown.js";
 import sectionsRoutes  from "./routes/sections.js";
 import songformRoutes  from "./routes/songform.js";
+import debugRoutes     from "./routes/debug.js";
 
 async function main() {
   const config = loadConfig();
@@ -70,6 +71,7 @@ async function main() {
   await app.register(mixdownRoutes(rt));
   await app.register(sectionsRoutes(store));
   await app.register(songformRoutes({ store, rt, webRemote, state, ws }));
+  await app.register(debugRoutes(rt));
 
   app.get("/ws", { websocket: true }, (socket /* WebSocket */) => {
     ws.add(socket as any);

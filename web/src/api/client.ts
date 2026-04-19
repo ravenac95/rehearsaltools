@@ -84,6 +84,11 @@ export const api = {
   // Mixdown
   mixdownAll: (output_dir?: string) => req("/api/mixdown/all",
     { method: "POST", body: JSON.stringify({ output_dir }) }),
+
+  // Debug
+  setLogEnabled: (enabled: boolean) =>
+    req<{ enabled: boolean }>("/api/debug/logging",
+      { method: "POST", body: JSON.stringify({ enabled }) }),
 };
 
 // ── WebSocket ──────────────────────────────────────────────────────────────
