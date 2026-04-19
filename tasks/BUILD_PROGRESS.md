@@ -12,7 +12,7 @@
 ## Tasks
 - [x] task-01-logger-module — done
 - [x] task-02-dispatch-logging — done
-- [ ] task-03-handler-logging — pending
+- [x] task-03-handler-logging — done
 - [ ] task-04-set-log-enabled-command — pending
 
 ## Notes
