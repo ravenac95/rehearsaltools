@@ -34,7 +34,16 @@ export default function songRoutes(deps: Deps) {
           const body = req.body ?? {};
           const partial: Parameters<SongStore["updateSong"]>[0] = {};
           if (typeof body.name === "string") partial.name = body.name;
-          if ("activeFormId" in body) partial.activeFormId = body.activeFormId as string | null;
+          if ("activeFormId" in body) {
+            const id = body.activeFormId;
+            if (id !== null && typeof id !== "string") {
+              return reply.code(400).send({ ok: false, error: "activeFormId must be a string or null" });
+            }
+            if (typeof id === "string" && !store.getSong().songForms.some((f) => f.id === id)) {
+              return reply.code(400).send({ ok: false, error: `unknown activeFormId: ${id}` });
+            }
+            partial.activeFormId = id;
+          }
           const song = await store.updateSong(partial);
           return { ok: true, song };
         } catch (err: any) {
@@ -74,7 +83,9 @@ export default function songRoutes(deps: Deps) {
               : null;
           return { ok: true, song: store.getSong(), warning };
         } catch (err: any) {
-          return reply.code(400).send({ ok: false, error: String(err.message ?? err) });
+          const msg = String(err.message ?? err);
+          const code = msg.startsWith("section not found") ? 404 : 400;
+          return reply.code(code).send({ ok: false, error: msg });
         }
       },
     );
@@ -130,7 +141,13 @@ export default function songRoutes(deps: Deps) {
       "/api/song/forms/:id/write",
       async (req, reply) => {
         const song = store.getSong();
-        const { rows, totalBars } = flattenForm(song, req.params.id);
+        let rows;
+        let totalBars;
+        try {
+          ({ rows, totalBars } = flattenForm(song, req.params.id));
+        } catch (err: any) {
+          return reply.code(400).send({ ok: false, error: String(err.message ?? err) });
+        }
         if (rows.length === 0) {
           return reply.code(400).send({
             ok: false,

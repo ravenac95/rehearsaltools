@@ -127,10 +127,7 @@ export const useStore = create<AppStore>((set, get) => ({
 
   deleteSection: async (letter) => {
     const result = await api.deleteSection(letter);
-    set({ song: result.song });
-    if (result.warning) {
-      set({ toast: result.warning });
-    }
+    set({ song: result.song, toast: result.warning ?? null });
   },
 
   writeActiveForm: async (regionName) => {

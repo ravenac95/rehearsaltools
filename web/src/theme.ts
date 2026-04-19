@@ -4,6 +4,14 @@
 export type ThemePreference = "light" | "dark" | "system";
 
 const KEY = "rt-theme";
+const VALID_PREFS: ThemePreference[] = ["light", "dark", "system"];
+
+let systemMql: MediaQueryList | null = null;
+let systemListener: (() => void) | null = null;
+
+function isThemePreference(value: unknown): value is ThemePreference {
+  return typeof value === "string" && (VALID_PREFS as string[]).includes(value);
+}
 
 function getEffectiveTheme(pref: ThemePreference): "light" | "dark" {
   if (pref === "system") {
@@ -17,17 +25,30 @@ function applyTheme(pref: ThemePreference) {
   document.documentElement.setAttribute("data-theme", effective);
 }
 
-export function initTheme(): void {
-  const stored = (localStorage.getItem(KEY) as ThemePreference | null) ?? "system";
-  applyTheme(stored);
-  if (stored === "system") {
-    window.matchMedia("(prefers-color-scheme: dark)")
-      .addEventListener("change", () => applyTheme("system"));
+function bindSystemListener() {
+  if (systemListener) return;
+  systemMql = window.matchMedia("(prefers-color-scheme: dark)");
+  systemListener = () => applyTheme("system");
+  systemMql.addEventListener("change", systemListener);
+}
+
+function unbindSystemListener() {
+  if (systemListener && systemMql) {
+    systemMql.removeEventListener("change", systemListener);
   }
+  systemListener = null;
+  systemMql = null;
 }
 
 export function getThemePreference(): ThemePreference {
-  return (localStorage.getItem(KEY) as ThemePreference | null) ?? "system";
+  const raw = localStorage.getItem(KEY);
+  return isThemePreference(raw) ? raw : "system";
+}
+
+export function initTheme(): void {
+  const stored = getThemePreference();
+  applyTheme(stored);
+  if (stored === "system") bindSystemListener();
 }
 
 export function cycleTheme(): ThemePreference {
@@ -36,10 +57,7 @@ export function cycleTheme(): ThemePreference {
     current === "system" ? "light" : current === "light" ? "dark" : "system";
   localStorage.setItem(KEY, next);
   applyTheme(next);
-  // Re-attach system listener if needed
-  if (next === "system") {
-    window.matchMedia("(prefers-color-scheme: dark)")
-      .addEventListener("change", () => applyTheme("system"));
-  }
+  if (next === "system") bindSystemListener();
+  else unbindSystemListener();
   return next;
 }

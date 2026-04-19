@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { parsePattern, serialisePattern } from "./pattern";
 import { LetterBadge } from "./LetterBadge";
 
@@ -10,9 +10,18 @@ interface FormStringEditorProps {
 
 export function FormStringEditor({ pattern, onChange, definedLetters }: FormStringEditorProps) {
   const defined = new Set(definedLetters ?? []);
-  const [draft, setDraft] = useState(serialisePattern(pattern));
+  const serialised = serialisePattern(pattern);
+  const [draft, setDraft] = useState(serialised);
   const [errors, setErrors] = useState<string[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Sync draft when the incoming pattern changes from outside (form switch, snapshot).
+  // Skip while the user is actively typing in this input to avoid clobbering mid-edit.
+  useEffect(() => {
+    if (inputRef.current && document.activeElement === inputRef.current) return;
+    setDraft(serialised);
+    setErrors([]);
+  }, [serialised]);
 
   const handleChange = (value: string) => {
     setDraft(value);

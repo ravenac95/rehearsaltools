@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useStore } from "../store";
 import { FormTabs } from "../components/song/FormTabs";
 import { FormStringEditor } from "../components/song/FormStringEditor";
@@ -21,6 +21,8 @@ export function SongEditor() {
   const clearToast = useStore((s) => s.clearToast);
 
   const [running, setRunning] = useState(false);
+  const [nameDraft, setNameDraft] = useState(song.name);
+  const nameInputRef = useRef<HTMLInputElement>(null);
 
   // Auto-clear toast after 4s
   useEffect(() => {
@@ -28,6 +30,26 @@ export function SongEditor() {
     const t = setTimeout(clearToast, 4000);
     return () => clearTimeout(t);
   }, [toast, clearToast]);
+
+  // Sync name draft from store when not focused (snapshot updates, form loads)
+  useEffect(() => {
+    if (document.activeElement === nameInputRef.current) return;
+    setNameDraft(song.name);
+  }, [song.name]);
+
+  // Debounce name commit while typing
+  useEffect(() => {
+    if (nameDraft === song.name) return;
+    const t = setTimeout(() => {
+      run(() => updateSongName(nameDraft));
+    }, 500);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nameDraft]);
+
+  const commitName = () => {
+    if (nameDraft !== song.name) run(() => updateSongName(nameDraft));
+  };
 
   const activeForm = song.songForms.find((f) => f.id === song.activeFormId)
     ?? song.songForms[0];
@@ -100,9 +122,12 @@ export function SongEditor() {
       {/* Song name */}
       <div style={{ padding: "8px var(--spacing-md)", borderBottom: "1px solid var(--rule)" }}>
         <input
+          ref={nameInputRef}
           type="text"
-          value={song.name}
-          onChange={(e) => run(() => updateSongName(e.target.value))}
+          value={nameDraft}
+          onChange={(e) => setNameDraft(e.target.value)}
+          onBlur={commitName}
+          onKeyDown={(e) => { if (e.key === "Enter") { commitName(); e.currentTarget.blur(); } }}
           style={{
             width: "100%", background: "transparent", border: "none",
             fontFamily: "var(--font-marker)", fontSize: 22, fontWeight: 700,

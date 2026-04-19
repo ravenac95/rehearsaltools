@@ -264,6 +264,23 @@ export class SongStore {
     const form = this.data.song.songForms.find((f) => f.id === id);
     if (!form) throw new Error(`form not found: ${id}`);
 
+    if (partial.bpm !== undefined) {
+      if (typeof partial.bpm !== "number" || partial.bpm < 20 || partial.bpm > 999) {
+        throw new Error("form bpm must be 20..999");
+      }
+    }
+    if (partial.note !== undefined && !VALID_NOTES.has(partial.note)) {
+      throw new Error("form note must be one of w,h,q,e,s");
+    }
+    if (partial.pattern !== undefined) {
+      if (!Array.isArray(partial.pattern)) throw new Error("pattern must be an array");
+      for (const entry of partial.pattern) {
+        if (typeof entry !== "string" || !/^[A-Z]$/.test(entry)) {
+          throw new Error("pattern entries must be single uppercase letters A-Z");
+        }
+      }
+    }
+
     this.captureRevision("updateSongForm");
     if (partial.name !== undefined) form.name = partial.name;
     if (partial.bpm !== undefined) form.bpm = partial.bpm;
@@ -330,6 +347,12 @@ export class SongStore {
 
   async deleteSection(letter: string): Promise<{ affectedForms: string[] }> {
     this.ensureLoaded();
+    if (typeof letter !== "string" || !/^[A-Z]$/.test(letter)) {
+      throw new Error("letter must be a single uppercase character A-Z");
+    }
+    if (!this.data.song.sections.some((s) => s.letter === letter)) {
+      throw new Error(`section not found: ${letter}`);
+    }
     this.captureRevision("deleteSection");
 
     // Remove the section
