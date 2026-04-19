@@ -95,7 +95,6 @@ describe("Revision history", () => {
 
     await store.restoreRevision(revId);
     const revs = store.listRevisions();
-    // The newest revision should have reason "restoreRevision"
-    expect(revs[0].reason).toBe("restoreRevision");
+    expect(revs[0].reason).toBe("restore");
   });
 });

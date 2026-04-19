@@ -356,7 +356,7 @@ export class SongStore {
     const rev = this.data.revisions.find((r) => r.id === id);
     if (!rev) throw new Error(`revision not found: ${id}`);
 
-    this.captureRevision("restoreRevision");
+    this.captureRevision("restore");
     this.data.song = deepCopy(rev.song);
     await this.persist();
     return this.getSong();
