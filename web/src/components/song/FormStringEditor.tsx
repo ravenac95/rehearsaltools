@@ -5,9 +5,11 @@ import { LetterBadge } from "./LetterBadge";
 interface FormStringEditorProps {
   pattern: string[];
   onChange: (letters: string[]) => void;  // called only when pattern is valid
+  definedLetters?: string[];               // letters that resolve to a defined section
 }
 
-export function FormStringEditor({ pattern, onChange }: FormStringEditorProps) {
+export function FormStringEditor({ pattern, onChange, definedLetters }: FormStringEditorProps) {
+  const defined = new Set(definedLetters ?? []);
   const [draft, setDraft] = useState(serialisePattern(pattern));
   const [errors, setErrors] = useState<string[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -50,9 +52,22 @@ export function FormStringEditor({ pattern, onChange }: FormStringEditorProps) {
       {/* Token pills (visual echo) */}
       {pattern.length > 0 && (
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
-          {pattern.map((letter, i) => (
-            <LetterBadge key={i} letter={letter} size={28} />
-          ))}
+          {pattern.map((letter, i) => {
+            const undef = definedLetters !== undefined && !defined.has(letter);
+            return (
+              <div
+                key={i}
+                title={undef ? "no section — create it in the Sections list" : undefined}
+                style={{
+                  padding: undef ? 2 : 0,
+                  border: undef ? "1.5px dashed var(--accent)" : "none",
+                  borderRadius: undef ? "var(--radius-sm)" : undefined,
+                }}
+              >
+                <LetterBadge letter={letter} size={28} />
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

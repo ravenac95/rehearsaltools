@@ -9,6 +9,7 @@ interface SectionRowProps {
   section: Section;
   form: SongForm;              // needed for effective BPM/note computation
   onUpdate: (stanzas: Stanza[], bpm?: number, note?: NoteValue) => void;
+  onDelete?: () => void;
 }
 
 function effectiveBpm(stanza: Stanza, section: Section, form: SongForm): number {
@@ -18,7 +19,7 @@ function effectiveNote(stanza: Stanza, section: Section, form: SongForm): NoteVa
   return stanza.note ?? section.note ?? form.note;
 }
 
-export function SectionRow({ section, form, onUpdate }: SectionRowProps) {
+export function SectionRow({ section, form, onUpdate, onDelete }: SectionRowProps) {
   const [expanded, setExpanded] = useState(false);
   const [expandedStanzaIdx, setExpandedStanzaIdx] = useState<number | null>(null);
 
@@ -133,6 +134,17 @@ export function SectionRow({ section, form, onUpdate }: SectionRowProps) {
             style={{ alignSelf: "flex-start", fontSize: 13 }}>
             + stanza
           </button>
+
+          {onDelete && (
+            <button
+              className="chip"
+              onClick={onDelete}
+              style={{ alignSelf: "flex-end", fontSize: 13, color: "var(--accent)", borderColor: "var(--accent)" }}
+              title={`Delete section ${section.letter}`}
+            >
+              × delete section
+            </button>
+          )}
         </div>
       )}
     </div>

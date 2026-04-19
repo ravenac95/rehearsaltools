@@ -13,6 +13,8 @@ export function SongEditor() {
   const setActiveForm = useStore((s) => s.setActiveForm);
   const updateForm = useStore((s) => s.updateForm);
   const upsertSection = useStore((s) => s.upsertSection);
+  const deleteSection = useStore((s) => s.deleteSection);
+  const updateSongName = useStore((s) => s.updateSongName);
   const writeActiveForm = useStore((s) => s.writeActiveForm);
   const setError = useStore((s) => s.setError);
   const toast = useStore((s) => s.toast);
@@ -41,18 +43,21 @@ export function SongEditor() {
     );
   }
 
-  // Unique letters in active form pattern (first-appearance order)
-  const uniqueLetters = Array.from(new Set(activeForm.pattern));
-
-  // Sections present in the library for the letters in this form
   const sectionsByLetter = Object.fromEntries(song.sections.map((s) => [s.letter, s]));
+  const definedLetters = song.sections.map((s) => s.letter);
+  const unresolvedLetters = activeForm.pattern.filter((l) => !sectionsByLetter[l]);
+  const hasUnresolved = unresolvedLetters.length > 0;
 
-  // Total bars
+  // Total bars (unresolved letters contribute 0)
   const totalBars = activeForm.pattern.reduce((acc, letter) => {
     const sec = sectionsByLetter[letter];
     if (!sec) return acc;
     return acc + sec.stanzas.reduce((a, st) => a + st.bars, 0);
   }, 0);
+
+  const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+  const nextLetter = ALPHABET.find((l) => !definedLetters.includes(l));
+  const canAddSection = nextLetter !== undefined;
 
   const run = async (fn: () => Promise<unknown>) => {
     try { await fn(); } catch (err: any) { setError(String(err.message ?? err)); }
@@ -81,9 +86,13 @@ export function SongEditor() {
     run(() => upsertSection(letter, stanzas, bpm, note));
   };
 
-  const handleAddMissingSection = (letter: string) => {
-    // Create a default section for a letter that is in the pattern but not yet defined
-    run(() => upsertSection(letter, [{ bars: 8, num: 4, denom: 4 }]));
+  const handleAddSection = () => {
+    if (!nextLetter) return;
+    run(() => upsertSection(nextLetter, [{ bars: 8, num: 4, denom: 4 }]));
+  };
+
+  const handleDeleteSection = (letter: string) => {
+    run(() => deleteSection(letter));
   };
 
   return (
@@ -93,7 +102,7 @@ export function SongEditor() {
         <input
           type="text"
           value={song.name}
-          onChange={(e) => run(() => useStore.getState().updateSongName(e.target.value))}
+          onChange={(e) => run(() => updateSongName(e.target.value))}
           style={{
             width: "100%", background: "transparent", border: "none",
             fontFamily: "var(--font-marker)", fontSize: 22, fontWeight: 700,
@@ -126,6 +135,7 @@ export function SongEditor() {
         <FormStringEditor
           pattern={activeForm.pattern}
           onChange={handlePatternChange}
+          definedLetters={definedLetters}
         />
 
         {/* Form-level tempo */}
@@ -140,46 +150,64 @@ export function SongEditor() {
           />
         </div>
 
-        {/* Total bars */}
+        {/* Total bars + unresolved notice */}
         <div style={{ color: "var(--muted-color)", fontSize: 13, fontFamily: "var(--font-mono)", marginBottom: 12 }}>
           {totalBars} bars total
+          {hasUnresolved && (
+            <span style={{ marginLeft: 8, color: "var(--accent)" }}>
+              · unresolved: {Array.from(new Set(unresolvedLetters)).join(" ")}
+            </span>
+          )}
         </div>
 
-        {/* Section rows */}
-        {uniqueLetters.map((letter) => {
-          const section = sectionsByLetter[letter];
-          if (!section) {
-            // Letter is in pattern but section not yet defined
-            return (
-              <div key={letter} style={{
-                display: "flex", alignItems: "center", gap: 10,
-                padding: 10, border: "1px dashed var(--rule)",
-                borderRadius: "var(--radius-md)", marginBottom: 8,
-                color: "var(--muted-color)",
-              }}>
-                <span style={{ fontFamily: "var(--font-marker)", fontWeight: 700, fontSize: 18 }}>{letter}</span>
-                <span>— not defined yet</span>
-                <button className="chip" onClick={() => handleAddMissingSection(letter)}
-                  style={{ marginLeft: "auto", fontSize: 13 }}>
-                  + Add section {letter}
-                </button>
-              </div>
-            );
-          }
-          return (
+        {/* Sections library — always visible, independent of pattern */}
+        <div style={{ marginTop: 8 }}>
+          <div style={{
+            fontSize: 11, letterSpacing: 1, color: "var(--muted-color)",
+            fontFamily: "var(--font-mono)", marginBottom: 8, textTransform: "uppercase",
+          }}>
+            Sections
+          </div>
+
+          {song.sections.length === 0 && (
+            <div style={{
+              padding: 10, border: "1px dashed var(--rule)",
+              borderRadius: "var(--radius-md)", marginBottom: 8,
+              color: "var(--muted-color)", fontSize: 13, fontFamily: "var(--font-hand)",
+            }}>
+              No sections yet — tap "+ section" to add one.
+            </div>
+          )}
+
+          {song.sections.map((section) => (
             <SectionRow
-              key={letter}
+              key={section.letter}
               section={section}
               form={activeForm}
-              onUpdate={(stanzas, bpm, note) => handleSectionUpdate(letter, stanzas, bpm, note)}
+              onUpdate={(stanzas, bpm, note) => handleSectionUpdate(section.letter, stanzas, bpm, note)}
+              onDelete={() => handleDeleteSection(section.letter)}
             />
-          );
-        })}
+          ))}
+
+          <button
+            className="chip"
+            onClick={handleAddSection}
+            disabled={!canAddSection}
+            title={canAddSection ? `Add section ${nextLetter}` : "all 26 letters used"}
+            style={{ marginTop: 4 }}
+          >
+            + section{canAddSection ? ` ${nextLetter}` : ""}
+          </button>
+        </div>
 
         <div style={{ height: 80 }} /> {/* spacer above RunBar */}
       </div>
 
-      <RunBar onRun={handleRun} loading={running} disabled={activeForm.pattern.length === 0} />
+      <RunBar
+        onRun={handleRun}
+        loading={running}
+        disabled={activeForm.pattern.length === 0 || hasUnresolved}
+      />
     </div>
   );
 }
