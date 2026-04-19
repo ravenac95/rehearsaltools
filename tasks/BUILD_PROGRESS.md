@@ -13,7 +13,7 @@
 1. [x] task-01-backend-types-and-song-store.md
 2. [x] task-02-backend-flatten-module.md
 3. [x] task-03-backend-routes-and-wiring.md
-4. task-04-backend-tests.md
+4. [x] task-04-backend-tests.md
 5. task-05-frontend-types-store-api.md
 6. task-06-theme-system.md
 7. task-07-shared-ui-primitives.md
