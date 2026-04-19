@@ -15,7 +15,7 @@
 3. [x] task-03-backend-routes-and-wiring.md
 4. [x] task-04-backend-tests.md
 5. [x] task-05-frontend-types-store-api.md
-6. task-06-theme-system.md
+6. [x] task-06-theme-system.md
 7. task-07-shared-ui-primitives.md
 8. task-08-retheme-existing-screens.md
 9. task-09-pattern-parser.md
