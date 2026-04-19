@@ -52,6 +52,7 @@ local LARGE_OFFSET = 60 * 60 * 24  -- 24 hours
 function M.new(adapter)
   return {
     new = function(payload)
+      payload = payload or {}
       logger.debug("regions.new: enter, name=%s", tostring(payload.name))
       local ok, data = validation.validate_region_new(payload)
       if not ok then
@@ -68,6 +69,7 @@ function M.new(adapter)
     end,
 
     rename = function(payload)
+      payload = payload or {}
       logger.debug("regions.rename: enter, id=%s name=%s",
         tostring(payload.id), tostring(payload.name))
       local ok, data = validation.validate_region_rename(payload)
@@ -95,6 +97,7 @@ function M.new(adapter)
     end,
 
     play = function(payload)
+      payload = payload or {}
       logger.debug("regions.play: enter, id=%s", tostring(payload.id))
       local ok, data = validation.validate_region_id(payload)
       if not ok then

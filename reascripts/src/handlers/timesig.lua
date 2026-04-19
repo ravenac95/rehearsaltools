@@ -13,6 +13,7 @@ local M = {}
 
 function M.new(adapter)
   return function(payload)
+    payload = payload or {}
     logger.debug("timesig: enter, num=%s denom=%s measure=%s",
       tostring(payload.numerator), tostring(payload.denominator), tostring(payload.measure))
     local ok, data = validation.validate_timesig(payload)

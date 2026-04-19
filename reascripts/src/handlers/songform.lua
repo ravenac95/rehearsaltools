@@ -50,6 +50,7 @@ M._bars_to_qn            = bars_to_qn
 
 function M.new(adapter)
   return function(payload)
+    payload = payload or {}
     logger.debug("songform: enter, row_count=%s startTime=%s",
       tostring(payload.rows and #payload.rows or 0),
       tostring(payload.startTime))

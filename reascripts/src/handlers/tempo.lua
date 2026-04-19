@@ -12,6 +12,7 @@ local M = {}
 
 function M.new(adapter)
   return function(payload)
+    payload = payload or {}
     logger.debug("tempo: enter, bpm=%s", tostring(payload.bpm))
     local ok, data = validation.validate_tempo(payload)
     if not ok then

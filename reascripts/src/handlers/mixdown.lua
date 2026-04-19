@@ -13,6 +13,7 @@ local M = {}
 
 function M.new(adapter)
   return function(payload)
+    payload = payload or {}
     logger.debug("mixdown: enter, output_dir=%s", tostring(payload.output_dir))
     local ok, data = validation.validate_mixdown(payload)
     if not ok then
