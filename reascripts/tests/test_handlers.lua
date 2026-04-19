@@ -106,6 +106,32 @@ local function make_adapter()
   return a
 end
 
+-- ── Reaper stub for log-verification tests ───────────────────────────────────
+
+local function with_reaper_stub(ext_state_value, fn)
+  local console_calls = {}
+  local old_reaper = reaper  -- will be nil in test context
+  reaper = {
+    get_action_context = function()
+      return nil, "./", nil, nil, nil, nil, nil
+    end,
+    GetExtState = function(section, key)
+      if section == "rehearsaltools" and key == "log_enabled" then
+        return ext_state_value
+      end
+      return ""
+    end,
+    SetExtState = function() end,
+    ShowConsoleMsg = function(s)
+      table.insert(console_calls, s)
+    end,
+  }
+  local ok, err = pcall(fn, console_calls)
+  reaper = old_reaper  -- restore
+  if not ok then error(err, 2) end
+  return console_calls
+end
+
 -- ── project ────────────────────────────────────────────────────────────────
 
 describe("project handler", function()
@@ -366,5 +392,274 @@ describe("songform handler", function()
     local h = songform_h.new(a)
     h({startTime = 0, rows = {{barOffset = 0, num = 4, denom = 4, bpm = 120}}})
     assert_eq(a._regions[1].name, "Take")
+  end)
+end)
+
+-- ── Log-verification tests ────────────────────────────────────────────────────
+
+describe("project handler logging", function()
+  it("emits DEBUG log lines when logging is enabled", function()
+    with_reaper_stub("1", function(console_calls)
+      local ph = dofile("src/handlers/project.lua")
+      local a = make_adapter()
+      local h = ph.new(a)
+      h({})
+      local found = false
+      for _, s in ipairs(console_calls) do
+        if s:find("%[DEBUG%]") then found = true end
+      end
+      assert_true(found, "expected at least one DEBUG log line from project handler")
+    end)
+  end)
+
+  it("emits no log lines when logging is disabled", function()
+    with_reaper_stub("", function(console_calls)
+      local ph = dofile("src/handlers/project.lua")
+      local a = make_adapter()
+      ph.new(a)({})
+      assert_eq(#console_calls, 0)
+    end)
+  end)
+end)
+
+describe("tempo handler logging", function()
+  it("emits DEBUG log lines when logging is enabled", function()
+    with_reaper_stub("1", function(console_calls)
+      local th = dofile("src/handlers/tempo.lua")
+      local a = make_adapter()
+      local h = th.new(a)
+      h({bpm = 120})
+      local found = false
+      for _, s in ipairs(console_calls) do
+        if s:find("%[DEBUG%]") then found = true end
+      end
+      assert_true(found, "expected at least one DEBUG log line from tempo handler")
+    end)
+  end)
+
+  it("emits ERROR log on validation failure when enabled", function()
+    with_reaper_stub("1", function(console_calls)
+      local th = dofile("src/handlers/tempo.lua")
+      local a = make_adapter()
+      local h = th.new(a)
+      h({})  -- missing bpm → validation error
+      local found_error = false
+      for _, s in ipairs(console_calls) do
+        if s:find("%[ERROR%]") then found_error = true end
+      end
+      assert_true(found_error, "expected ERROR log line for tempo validation failure")
+    end)
+  end)
+
+  it("emits no log lines when logging is disabled", function()
+    with_reaper_stub("", function(console_calls)
+      local th = dofile("src/handlers/tempo.lua")
+      local a = make_adapter()
+      th.new(a)({bpm = 120})
+      assert_eq(#console_calls, 0)
+    end)
+  end)
+end)
+
+describe("timesig handler logging", function()
+  it("emits DEBUG log lines when logging is enabled", function()
+    with_reaper_stub("1", function(console_calls)
+      local th = dofile("src/handlers/timesig.lua")
+      local a = make_adapter()
+      local h = th.new(a)
+      h({numerator = 4, denominator = 4})
+      local found = false
+      for _, s in ipairs(console_calls) do
+        if s:find("%[DEBUG%]") then found = true end
+      end
+      assert_true(found, "expected at least one DEBUG log line from timesig handler")
+    end)
+  end)
+
+  it("emits ERROR log on validation failure when enabled", function()
+    with_reaper_stub("1", function(console_calls)
+      local th = dofile("src/handlers/timesig.lua")
+      local a = make_adapter()
+      local h = th.new(a)
+      h({})  -- missing numerator → validation error
+      local found_error = false
+      for _, s in ipairs(console_calls) do
+        if s:find("%[ERROR%]") then found_error = true end
+      end
+      assert_true(found_error, "expected ERROR log line for timesig validation failure")
+    end)
+  end)
+
+  it("emits no log lines when logging is disabled", function()
+    with_reaper_stub("", function(console_calls)
+      local th = dofile("src/handlers/timesig.lua")
+      local a = make_adapter()
+      th.new(a)({numerator = 4, denominator = 4})
+      assert_eq(#console_calls, 0)
+    end)
+  end)
+end)
+
+describe("mixdown handler logging", function()
+  it("emits DEBUG log lines when logging is enabled", function()
+    with_reaper_stub("1", function(console_calls)
+      local mh = dofile("src/handlers/mixdown.lua")
+      local a = make_adapter()
+      local h = mh.new(a)
+      h({})
+      local found = false
+      for _, s in ipairs(console_calls) do
+        if s:find("%[DEBUG%]") then found = true end
+      end
+      assert_true(found, "expected at least one DEBUG log line from mixdown handler")
+    end)
+  end)
+
+  it("emits ERROR log on validation failure when enabled", function()
+    with_reaper_stub("1", function(console_calls)
+      local mh = dofile("src/handlers/mixdown.lua")
+      local a = make_adapter()
+      local h = mh.new(a)
+      h({output_dir = 123})  -- numeric output_dir → validation error
+      local found_error = false
+      for _, s in ipairs(console_calls) do
+        if s:find("%[ERROR%]") then found_error = true end
+      end
+      assert_true(found_error, "expected ERROR log line for mixdown validation failure")
+    end)
+  end)
+
+  it("emits no log lines when logging is disabled", function()
+    with_reaper_stub("", function(console_calls)
+      local mh = dofile("src/handlers/mixdown.lua")
+      local a = make_adapter()
+      mh.new(a)({})
+      assert_eq(#console_calls, 0)
+    end)
+  end)
+end)
+
+describe("regions handler logging", function()
+  it("regions.new emits DEBUG log lines when logging is enabled", function()
+    with_reaper_stub("1", function(console_calls)
+      local rh = dofile("src/handlers/regions.lua")
+      local a = make_adapter()
+      local r = rh.new(a)
+      r.new({name = "intro"})
+      local found = false
+      for _, s in ipairs(console_calls) do
+        if s:find("%[DEBUG%]") then found = true end
+      end
+      assert_true(found, "expected at least one DEBUG log line from regions.new")
+    end)
+  end)
+
+  it("regions.new emits ERROR log on validation failure when enabled", function()
+    with_reaper_stub("1", function(console_calls)
+      local rh = dofile("src/handlers/regions.lua")
+      local a = make_adapter()
+      local r = rh.new(a)
+      r.new({name = 42})  -- numeric name → validation error
+      local found_error = false
+      for _, s in ipairs(console_calls) do
+        if s:find("%[ERROR%]") then found_error = true end
+      end
+      assert_true(found_error, "expected ERROR log line for regions.new validation failure")
+    end)
+  end)
+
+  it("regions.rename emits DEBUG log lines when logging is enabled", function()
+    with_reaper_stub("1", function(console_calls)
+      local rh = dofile("src/handlers/regions.lua")
+      local a = make_adapter()
+      local r = rh.new(a)
+      r.new({name = "original"})
+      local region_id = a._regions[1].id
+      r.rename({id = region_id, name = "updated"})
+      local found = false
+      for _, s in ipairs(console_calls) do
+        if s:find("%[DEBUG%]") then found = true end
+      end
+      assert_true(found, "expected at least one DEBUG log line from regions.rename")
+    end)
+  end)
+
+  it("regions.play emits DEBUG log lines when logging is enabled", function()
+    with_reaper_stub("1", function(console_calls)
+      local rh = dofile("src/handlers/regions.lua")
+      local a = make_adapter()
+      local r = rh.new(a)
+      a._cursor = 5
+      r.new({name = "x"})
+      local region_id = a._regions[1].id
+      r.play({id = region_id})
+      local found = false
+      for _, s in ipairs(console_calls) do
+        if s:find("%[DEBUG%]") then found = true end
+      end
+      assert_true(found, "expected at least one DEBUG log line from regions.play")
+    end)
+  end)
+
+  it("regions.seek_to_end emits DEBUG log lines when logging is enabled", function()
+    with_reaper_stub("1", function(console_calls)
+      local rh = dofile("src/handlers/regions.lua")
+      local a = make_adapter()
+      local r = rh.new(a)
+      r.seek_to_end({})
+      local found = false
+      for _, s in ipairs(console_calls) do
+        if s:find("%[DEBUG%]") then found = true end
+      end
+      assert_true(found, "expected at least one DEBUG log line from regions.seek_to_end")
+    end)
+  end)
+
+  it("emits no log lines when logging is disabled", function()
+    with_reaper_stub("", function(console_calls)
+      local rh = dofile("src/handlers/regions.lua")
+      local a = make_adapter()
+      rh.new(a).new({name = "q"})
+      assert_eq(#console_calls, 0)
+    end)
+  end)
+end)
+
+describe("songform handler logging", function()
+  it("emits DEBUG log lines when logging is enabled", function()
+    with_reaper_stub("1", function(console_calls)
+      local sh = dofile("src/handlers/songform.lua")
+      local a = make_adapter()
+      local h = sh.new(a)
+      h({startTime = 0, rows = {{barOffset = 0, num = 4, denom = 4, bpm = 120}}})
+      local found = false
+      for _, s in ipairs(console_calls) do
+        if s:find("%[DEBUG%]") then found = true end
+      end
+      assert_true(found, "expected at least one DEBUG log line from songform handler")
+    end)
+  end)
+
+  it("emits ERROR log on validation failure when enabled", function()
+    with_reaper_stub("1", function(console_calls)
+      local sh = dofile("src/handlers/songform.lua")
+      local a = make_adapter()
+      local h = sh.new(a)
+      h({startTime = 0, rows = {}})  -- empty rows → validation error
+      local found_error = false
+      for _, s in ipairs(console_calls) do
+        if s:find("%[ERROR%]") then found_error = true end
+      end
+      assert_true(found_error, "expected ERROR log line for songform validation failure")
+    end)
+  end)
+
+  it("emits no log lines when logging is disabled", function()
+    with_reaper_stub("", function(console_calls)
+      local sh = dofile("src/handlers/songform.lua")
+      local a = make_adapter()
+      sh.new(a)({startTime = 0, rows = {{barOffset = 0, num = 4, denom = 4, bpm = 120}}})
+      assert_eq(#console_calls, 0)
+    end)
   end)
 end)

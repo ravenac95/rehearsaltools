@@ -15,6 +15,9 @@ local script_dir = (reaper and reaper.get_action_context)
   and ({reaper.get_action_context()})[2]:match("^(.*[\\/])")
   or ""
 local json = dofile(script_dir .. "src/json.lua")
+local logger = dofile(script_dir .. "src/logger.lua")
+
+local osc = dofile(script_dir .. "src/osc.lua")
 
 local M = {}
 
@@ -25,10 +28,12 @@ local M = {}
 --- @return tbl, nil   on success (empty table when arg is absent/empty)
 --- @return nil, err   on JSON parse error
 function M.read(get_context_fn)
-  get_context_fn = get_context_fn or reaper.get_action_context
+  local msg = osc.get(get_context_fn)
 
-  -- REAPER returns 7 values; index 7 is the OSC string arg.
-  local _, _, _, _, _, _, osc_arg = get_context_fn()
+  local osc_address = msg and msg.address
+  local osc_arg = msg and msg.arg
+
+  logger.debug("payload.read: osc_address= " .. tostring(osc_address) .. ", osc_arg= " .. tostring(osc_arg))
 
   -- Treat nil or empty string as "no payload".
   if osc_arg == nil or osc_arg == "" then

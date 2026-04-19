@@ -1,12 +1,29 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { api } from "../api/client";
 import { useStore } from "../store";
+
+const LOG_ENABLED_STORAGE_KEY = "rehearsaltools:log_enabled";
 
 export function Dashboard() {
   const transport = useStore((s) => s.transport);
   const currentTake = useStore((s) => s.currentTake);
   const setError = useStore((s) => s.setError);
   const [tempoInput, setTempoInput] = useState<string>("");
+  const [logEnabled, setLogEnabled] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem(LOG_ENABLED_STORAGE_KEY) === "1";
+    } catch {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(LOG_ENABLED_STORAGE_KEY, logEnabled ? "1" : "0");
+    } catch {
+      // ignore
+    }
+  }, [logEnabled]);
 
   const run = async (fn: () => Promise<unknown>) => {
     try {
@@ -87,6 +104,30 @@ export function Dashboard() {
         <button className="secondary" onClick={() => run(api.newProject)}>
           New Project
         </button>
+      </div>
+
+      <div className="hr" />
+
+      <div className="card">
+        <label>Debug</label>
+        <div className="row">
+          <button
+            className={logEnabled ? "primary" : "secondary"}
+            onClick={() =>
+              run(async () => {
+                const next = !logEnabled;
+                await api.setLogEnabled(next);
+                setLogEnabled(next);
+              })
+            }
+          >
+            REAPER console logging: {logEnabled ? "On" : "Off"}
+          </button>
+        </div>
+        <div className="muted" style={{ marginTop: 4, fontSize: 12 }}>
+          Toggles verbose ReaScript logging (reaper.ShowConsoleMsg) via the
+          persisted REAPER ExtState flag.
+        </div>
       </div>
     </>
   );

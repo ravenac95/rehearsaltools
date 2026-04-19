@@ -146,6 +146,41 @@ cd reascripts && lua tests/test_runner.lua
 Lua tests cover JSON, validation, the adapter, and every handler via a stubbed
 REAPER adapter. No REAPER installation is required.
 
+## OSC commands — `/rehearsaltools` dispatch
+
+All operations arrive as a single OSC message to the `/rehearsaltools` address.
+The JSON `command` field selects the operation.
+
+`/rehearsaltools` is invoked in REAPER as a fire-and-forget OSC custom action,
+so OSC callers should **not** expect any reply message. The values in the
+"Internal Lua return value" column below are the return values of the Lua
+handlers (used by the Lua test suite and consulted by dispatch for error
+handling), not OSC responses sent back to the client.
+
+| Command | Payload fields | Internal Lua return value |
+|---------|---------------|---------------------------|
+| `project.new` | *(none)* | `{"ok":true}` |
+| `tempo` | `bpm` (number, 20–999) | `{"bpm":<n>}` |
+| `timesig` | `numerator`, `denominator`, `measure?` | `{"numerator":<n>,"denominator":<n>,"measure":<n>}` |
+| `mixdown.all` | `output_dir?` (string) | `{"output_dir":"...","region_count":<n>}` |
+| `songform.write` | `rows` (array), `startTime` (number), `regionName?` | `{"regionId":<n>,"startTime":<n>,"rows":[...]}` |
+| `region.new` | `name?` (string) | *(no Lua return value)* |
+| `region.rename` | `id` (integer), `name` (string) | *(no Lua return value)* |
+| `region.play` | `id` (integer) | `{"id":<n>,"start":<n>}` |
+| `playhead.end` | *(none)* | *(no Lua return value)* |
+| `set_log_enabled` | `enabled` (boolean) | `{"ok":true,"enabled":<bool>}` |
+
+### Toggling REAPER console logging
+
+Send `set_log_enabled` from the SPA or any OSC client to enable or disable verbose
+logging to the REAPER console. The flag is persisted via `reaper.SetExtState` and
+survives REAPER restarts. When enabled, every dispatched command and all handler
+decision points produce `[rehearsaltools] [LEVEL]` lines in the REAPER console.
+
+```json
+{"command": "set_log_enabled", "enabled": true}
+```
+
 ## Repository layout
 
 ```

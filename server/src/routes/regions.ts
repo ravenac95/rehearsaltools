@@ -14,13 +14,18 @@ interface Deps {
 export default function regionsRoutes({ rt, webRemote }: Deps) {
   return async function (app: FastifyInstance) {
     app.get("/api/regions", async () => {
+      console.log(
+        "Handling GET /api/regions — fetching from REAPER via WebRemoteClient",
+      )
       const regions = await webRemote.listRegions();
       return { ok: true, regions };
     });
 
     app.post<{ Body: { name?: string } }>("/api/regions", async (_req, reply) => {
+      console.log("Handling POST /api/regions — creating region in REAPER via RtClient");
       const name = _req.body?.name ?? "";
       const before = await webRemote.listRegions();
+      console.log("Existing regions before creation", { before });
       const prevMaxId = before.reduce((m, r) => Math.max(m, r.id), -1);
 
       await rt.send("region.new", { name });
