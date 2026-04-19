@@ -75,7 +75,10 @@ function M.new(adapter)
         type(data.startTime))
       return nil, "startTime is required and must be a number"
     end
+
+    logger.debug("songform playhead startTime=%.4g", data.startTime)
     local playhead_time = data.startTime
+
     local playhead_qn   = adapter.time_to_qn(playhead_time)
     logger.debug("songform: playhead_qn=%.4g", playhead_qn)
 

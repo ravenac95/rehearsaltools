@@ -6,9 +6,9 @@
 
 local script_dir = ({reaper.get_action_context()})[2]:match("^(.*[\\/])")
 
-local payload_mod = dofile(script_dir .. "src/payload.lua")
-local adapter     = dofile(script_dir .. "src/reaper_api.lua")
-local dispatch    = dofile(script_dir .. "src/dispatch.lua")
+local payload_mod     = dofile(script_dir .. "src/payload.lua")
+local adapter_factory = dofile(script_dir .. "src/reaper_api.lua")
+local dispatch        = dofile(script_dir .. "src/dispatch.lua")
 
 reaper.ShowConsoleMsg("[rehearsaltools] received\n")
 
@@ -18,6 +18,7 @@ if err then
   return
 end
 
+local adapter = adapter_factory.new(reaper)
 local _, d_err = dispatch.run(adapter, data, script_dir)
 if d_err then
   reaper.ShowConsoleMsg("[rehearsaltools] " .. d_err .. "\n")
