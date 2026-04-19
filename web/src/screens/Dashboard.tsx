@@ -82,6 +82,7 @@ export function Dashboard() {
             value={tempoInput}
             onChange={(e) => setTempoInput(e.target.value)}
             placeholder={transport.bpm ? String(Math.round(transport.bpm)) : "120"}
+            style={{ fontFamily: "var(--font-mono)" }}
           />
           <button className="secondary" onClick={applyTempo}>Apply</button>
         </div>

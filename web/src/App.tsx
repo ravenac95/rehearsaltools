@@ -2,10 +2,9 @@ import { useEffect, useState } from "react";
 import { connectWs } from "./api/client";
 import { useStore } from "./store";
 import { Dashboard } from "./screens/Dashboard";
-// import { Sections } from "./screens/Sections"; // removed in task-11
-// import { SongForm } from "./screens/SongForm";  // removed in task-11
 import { Regions } from "./screens/Regions";
 import { Mixdown } from "./screens/Mixdown";
+import { ThemeToggle } from "./components/ui";
 
 type Tab = "dashboard" | "regions" | "mixdown";
 
@@ -43,6 +42,10 @@ export function App() {
 
   return (
     <div className="app">
+      <div className="app-header">
+        <span className="app-header__title">RehearsalTools</span>
+        <ThemeToggle />
+      </div>
       <div className="tabs">
         {TABS.map((t) => (
           <button
@@ -67,7 +70,7 @@ export function App() {
           {transport.bpm ? `${Math.round(transport.bpm)} BPM` : ""}
           {transport.num ? ` • ${transport.num}/${transport.denom}` : ""}
         </span>
-        {error && <span style={{ color: "#e54" }}>{error}</span>}
+        {error && <span style={{ color: "var(--accent)" }}>{error}</span>}
       </div>
     </div>
   );
