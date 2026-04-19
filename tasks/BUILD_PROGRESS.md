@@ -10,7 +10,7 @@
 - TASK_REVIEW: approved
 
 ## Tasks
-1. task-01-backend-types-and-song-store.md
+1. [x] task-01-backend-types-and-song-store.md
 2. task-02-backend-flatten-module.md
 3. task-03-backend-routes-and-wiring.md
 4. task-04-backend-tests.md
