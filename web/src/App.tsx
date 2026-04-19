@@ -2,20 +2,18 @@ import { useEffect, useState } from "react";
 import { connectWs } from "./api/client";
 import { useStore } from "./store";
 import { Dashboard } from "./screens/Dashboard";
-import { Sections } from "./screens/Sections";
-import { SongForm } from "./screens/SongForm";
+// import { Sections } from "./screens/Sections"; // removed in task-11
+// import { SongForm } from "./screens/SongForm";  // removed in task-11
 import { Regions } from "./screens/Regions";
 import { Mixdown } from "./screens/Mixdown";
 
-type Tab = "dashboard" | "sections" | "songform" | "regions" | "mixdown";
+type Tab = "dashboard" | "regions" | "mixdown";
 
 const TABS: Array<{ id: Tab; label: string }> = [
   { id: "dashboard", label: "Transport" },
-  { id: "songform",  label: "Song Form" },
-  { id: "sections",  label: "Sections"  },
   { id: "regions",   label: "Regions"   },
   { id: "mixdown",   label: "Mixdown"   },
-];
+]; // Note: Sections and Song tabs added back in task-11
 
 export function App() {
   const [tab, setTab] = useState<Tab>("dashboard");
@@ -59,8 +57,6 @@ export function App() {
 
       <div className="screen">
         {tab === "dashboard" && <Dashboard />}
-        {tab === "sections"  && <Sections  />}
-        {tab === "songform"  && <SongForm  />}
         {tab === "regions"   && <Regions   />}
         {tab === "mixdown"   && <Mixdown   />}
       </div>

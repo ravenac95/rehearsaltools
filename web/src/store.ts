@@ -1,55 +1,61 @@
 // web/src/store.ts
-// Zustand store for app state.
+// Zustand store for app state — refactored from sections/songForm to unified song slice.
 
 import { create } from "zustand";
 import type {
-  Section, SongForm, TransportState, Region, Take, WsMessage,
+  Song, SongForm, TransportState, Region, Take, WsMessage, NoteValue, Stanza,
 } from "./api/client";
 import { api } from "./api/client";
+
+const EMPTY_SONG: Song = {
+  id: "", name: "", sections: [], songForms: [], activeFormId: null,
+};
 
 export interface AppStore {
   transport: Partial<TransportState>;
   currentTake: Take | null;
-  sections: Section[];
-  songForm: SongForm;
+  song: Song;
   regions: Region[];
   loading: boolean;
   error: string | null;
+  toast: string | null;  // transient warning toast
 
-  // Actions
+  // Infrastructure
   refresh: () => Promise<void>;
   refreshRegions: () => Promise<void>;
   applyWsMessage: (msg: WsMessage) => void;
   setError: (err: string | null) => void;
+  clearToast: () => void;
 
-  // Sections
-  createSection: (name: string, rows: Section["rows"]) => Promise<void>;
-  updateSection: (id: string, name: string, rows: Section["rows"]) => Promise<void>;
-  deleteSection: (id: string) => Promise<void>;
-
-  // Song form
-  setSongForm: (sectionIds: string[]) => Promise<void>;
-  writeSongForm: (regionName?: string) => Promise<void>;
+  // Song
+  refreshSong: () => Promise<void>;
+  updateSongName: (name: string) => Promise<void>;
+  setActiveForm: (id: string) => Promise<void>;
+  createForm: () => Promise<void>;
+  updateForm: (id: string, partial: Partial<Pick<SongForm, "name" | "bpm" | "pattern" | "note">>) => Promise<void>;
+  deleteForm: (id: string) => Promise<void>;
+  upsertSection: (letter: string, stanzas: Stanza[], bpm?: number, note?: NoteValue) => Promise<void>;
+  deleteSection: (letter: string) => Promise<void>;
+  writeActiveForm: (regionName?: string) => Promise<void>;
 }
 
 export const useStore = create<AppStore>((set, get) => ({
   transport: {},
   currentTake: null,
-  sections: [],
-  songForm: { sectionIds: [] },
+  song: EMPTY_SONG,
   regions: [],
   loading: false,
   error: null,
+  toast: null,
 
   refresh: async () => {
     set({ loading: true, error: null });
     try {
-      const [sec, sf, rg] = await Promise.all([
-        api.listSections(), api.getSongForm(), api.listRegions(),
+      const [songRes, rg] = await Promise.all([
+        api.getSong(), api.listRegions(),
       ]);
       set({
-        sections: sec.sections,
-        songForm: sf.songForm,
+        song: songRes.song,
         regions: rg.regions,
         loading: false,
       });
@@ -69,50 +75,68 @@ export const useStore = create<AppStore>((set, get) => ({
 
   applyWsMessage: (msg) => {
     if (msg.type === "snapshot") {
-      const d = msg.data as {
-        transport?: Partial<TransportState>;
-        currentTake: Take | null;
-        sections: Section[];
-        songForm: SongForm;
-      };
-      set({
-        transport: d.transport ?? {},
-        currentTake: d.currentTake,
-        sections: d.sections,
-        songForm: d.songForm,
-      });
+      const d = msg.data as { transport?: Partial<TransportState>; currentTake: Take | null; song: Song };
+      set({ transport: d.transport ?? {}, currentTake: d.currentTake, song: d.song });
     } else if (msg.type === "transport") {
       set({ transport: msg.data as TransportState });
     } else if (msg.type === "songform:written") {
       const d = msg.data as { startTime: number };
       set({ currentTake: { startTime: d.startTime } });
-      // Also refresh regions to pick up the new one
       get().refreshRegions();
     }
   },
 
   setError: (err) => set({ error: err }),
+  clearToast: () => set({ toast: null }),
 
-  createSection: async (name, rows) => {
-    await api.createSection(name, rows);
-    await get().refresh();
-  },
-  updateSection: async (id, name, rows) => {
-    await api.updateSection(id, name, rows);
-    await get().refresh();
-  },
-  deleteSection: async (id) => {
-    await api.deleteSection(id);
-    await get().refresh();
+  // Song actions
+  refreshSong: async () => {
+    const { song } = await api.getSong();
+    set({ song });
   },
 
-  setSongForm: async (sectionIds) => {
-    await api.setSongForm(sectionIds);
-    await get().refresh();
+  updateSongName: async (name) => {
+    const { song } = await api.updateSong({ name });
+    set({ song });
   },
 
-  writeSongForm: async (regionName) => {
-    await api.writeSongForm(regionName);
+  setActiveForm: async (id) => {
+    const { song } = await api.updateSong({ activeFormId: id });
+    set({ song });
+  },
+
+  createForm: async () => {
+    const { song } = await api.createForm();
+    set({ song });
+  },
+
+  updateForm: async (id, partial) => {
+    const { song } = await api.updateForm(id, partial);
+    set({ song });
+  },
+
+  deleteForm: async (id) => {
+    const { song } = await api.deleteForm(id);
+    set({ song });
+  },
+
+  upsertSection: async (letter, stanzas, bpm, note) => {
+    const { song } = await api.upsertSection(letter, stanzas, bpm, note);
+    set({ song });
+  },
+
+  deleteSection: async (letter) => {
+    const result = await api.deleteSection(letter);
+    set({ song: result.song });
+    if (result.warning) {
+      set({ toast: result.warning });
+    }
+  },
+
+  writeActiveForm: async (regionName) => {
+    const { song } = get();
+    if (!song.activeFormId) throw new Error("no active form");
+    await api.writeActiveForm(song.activeFormId, regionName);
     await get().refreshRegions();
   },
 }));
