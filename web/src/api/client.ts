@@ -34,18 +34,18 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const api = {
   // Transport
-  play:   () => req("/api/transport/play",  { method: "POST" }),
-  stop:   () => req("/api/transport/stop",  { method: "POST" }),
-  record: () => req("/api/transport/record",{ method: "POST" }),
-  recordTake: () => req("/api/transport/record-take", { method: "POST" }),
+  play: () => req("/api/transport/play", { method: "POST", body: JSON.stringify({}) }),
+  stop: () => req("/api/transport/stop", { method: "POST", body: JSON.stringify({}) }),
+  record: () => req("/api/transport/record", { method: "POST", body: JSON.stringify({}) }),
+  recordTake: () => req("/api/transport/record-take", { method: "POST", body: JSON.stringify({}) }),
   seek: (time: number) => req("/api/transport/seek",
     { method: "POST", body: JSON.stringify({ time }) }),
   tempo: (bpm: number) => req("/api/transport/tempo",
     { method: "POST", body: JSON.stringify({ bpm }) }),
-  toggleMetronome: () => req("/api/transport/metronome/toggle", { method: "POST" }),
+  toggleMetronome: () => req("/api/transport/metronome/toggle", { method: "POST", body: JSON.stringify({}) }),
 
   // Project
-  newProject: () => req("/api/project/new", { method: "POST" }),
+  newProject: () => req("/api/project/new", { method: "POST", body: JSON.stringify({}) }),
 
   // Regions
   listRegions: () => req<{ regions: Region[] }>("/api/regions"),
@@ -55,8 +55,8 @@ export const api = {
     req<{ region: Region }>(`/api/regions/${id}`,
       { method: "PATCH", body: JSON.stringify({ name }) }),
   playRegion: (id: number) =>
-    req(`/api/regions/${id}/play`, { method: "POST" }),
-  seekToEnd: () => req<{ position: number }>("/api/playhead/end", { method: "POST" }),
+    req(`/api/regions/${id}/play`, { method: "POST", body: JSON.stringify({}) }),
+  seekToEnd: () => req<{ position: number }>("/api/playhead/end", { method: "POST", body: JSON.stringify({}) }),
 
   // Sections
   listSections: () => req<{ sections: Section[] }>("/api/sections"),
@@ -67,7 +67,7 @@ export const api = {
     req<{ section: Section }>(`/api/sections/${id}`,
       { method: "PUT", body: JSON.stringify({ name, rows }) }),
   deleteSection: (id: string) =>
-    req(`/api/sections/${id}`, { method: "DELETE" }),
+    req(`/api/sections/${id}`, { method: "DELETE", body: JSON.stringify({}) }),
 
   // Song form
   getSongForm: () => req<{
