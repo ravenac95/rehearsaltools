@@ -2,17 +2,19 @@ import { useEffect, useState } from "react";
 import { connectWs } from "./api/client";
 import { useStore } from "./store";
 import { Dashboard } from "./screens/Dashboard";
+import { SongEditor } from "./screens/SongEditor";
 import { Regions } from "./screens/Regions";
 import { Mixdown } from "./screens/Mixdown";
 import { ThemeToggle } from "./components/ui";
 
-type Tab = "dashboard" | "regions" | "mixdown";
+type Tab = "dashboard" | "song" | "regions" | "mixdown";
 
 const TABS: Array<{ id: Tab; label: string }> = [
   { id: "dashboard", label: "Transport" },
+  { id: "song",      label: "Song"      },
   { id: "regions",   label: "Regions"   },
   { id: "mixdown",   label: "Mixdown"   },
-]; // Note: Sections and Song tabs added back in task-11
+];
 
 export function App() {
   const [tab, setTab] = useState<Tab>("dashboard");
@@ -59,9 +61,10 @@ export function App() {
       </div>
 
       <div className="screen">
-        {tab === "dashboard" && <Dashboard />}
-        {tab === "regions"   && <Regions   />}
-        {tab === "mixdown"   && <Mixdown   />}
+        {tab === "dashboard" && <Dashboard   />}
+        {tab === "song"      && <SongEditor  />}
+        {tab === "regions"   && <Regions     />}
+        {tab === "mixdown"   && <Mixdown     />}
       </div>
 
       <div className="status-bar">
