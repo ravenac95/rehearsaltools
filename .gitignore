@@ -11,3 +11,4 @@ data/rehearsaltools.json
 data/rehearsaltools.json.tmp
 .vite/
 coverage/
+server/data
