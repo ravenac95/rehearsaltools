@@ -1,82 +1,128 @@
-import { useState, useRef, useEffect } from "react";
-import { parsePattern, serialisePattern } from "./pattern";
+import { useState, useRef, useCallback } from "react";
 import { LetterBadge } from "./LetterBadge";
 
 interface FormStringEditorProps {
   pattern: string[];
-  onChange: (letters: string[]) => void;  // called only when pattern is valid
-  definedLetters?: string[];               // letters that resolve to a defined section
+  onChange: (letters: string[]) => void;
+  definedLetters?: string[];
 }
 
 export function FormStringEditor({ pattern, onChange, definedLetters }: FormStringEditorProps) {
   const defined = new Set(definedLetters ?? []);
-  const serialised = serialisePattern(pattern);
-  const [draft, setDraft] = useState(serialised);
-  const [errors, setErrors] = useState<string[]>([]);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [focused, setFocused] = useState(false);
+  const [shaking, setShaking] = useState(false);
+  const regionRef = useRef<HTMLDivElement>(null);
+  const shakeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Sync draft when the incoming pattern changes from outside (form switch, snapshot).
-  // Skip while the user is actively typing in this input to avoid clobbering mid-edit.
-  useEffect(() => {
-    if (inputRef.current && document.activeElement === inputRef.current) return;
-    setDraft(serialised);
-    setErrors([]);
-  }, [serialised]);
+  const triggerShake = useCallback(() => {
+    if (shakeTimer.current) clearTimeout(shakeTimer.current);
+    setShaking(true);
+    shakeTimer.current = setTimeout(() => setShaking(false), 240);
+  }, []);
 
-  const handleChange = (value: string) => {
-    setDraft(value);
-    const { letters, errors: errs } = parsePattern(value);
-    if (errs.length === 0) {
-      onChange(letters);
-      setErrors([]);
-    } else {
-      setErrors(errs.map((e) => e.message));
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (/^[a-zA-Z]$/.test(e.key)) {
+      onChange([...pattern, e.key.toUpperCase()]);
+      e.preventDefault();
+      return;
     }
+    if (e.key === "Backspace") {
+      if (pattern.length > 0) {
+        onChange(pattern.slice(0, -1));
+      }
+      e.preventDefault();
+      return;
+    }
+    // All other keys: shake and swallow
+    triggerShake();
+    e.preventDefault();
   };
 
+  const handleClick = () => {
+    regionRef.current?.focus();
+  };
+
+  const uniqueLetters = Array.from(new Set(pattern));
+
   return (
-    <div style={{ padding: "8px 0" }}>
-      <label style={{ fontSize: 12, color: "var(--muted-color)", fontFamily: "var(--font-hand)", display: "block", marginBottom: 4 }}>
-        Pattern (type letters, use A×2 for repeats)
-      </label>
-      <input
-        ref={inputRef}
-        type="text"
-        value={draft}
-        onChange={(e) => handleChange(e.target.value)}
-        placeholder="e.g. I A A B A C"
+    <div style={{ padding: "8px 0" }} onClick={handleClick}>
+      {/* Header */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
+        <span style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: 10,
+          color: "var(--muted-color)",
+          letterSpacing: "0.05em",
+          textTransform: "uppercase",
+        }}>
+          Form Pattern
+        </span>
+        <span style={{
+          fontFamily: "var(--font-hand)",
+          fontSize: 11,
+          color: "var(--faint)",
+        }}>
+          type letters
+        </span>
+      </div>
+
+      {/* Editor region */}
+      <div
+        ref={regionRef}
+        tabIndex={0}
+        role="textbox"
+        aria-label="Form pattern editor"
+        onKeyDown={handleKeyDown}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        className={shaking ? "wf-shake" : undefined}
         style={{
-          width: "100%", padding: "10px 12px",
-          fontFamily: "var(--font-mono)", fontSize: 16,
-          background: "var(--surface)", color: "var(--ink)",
-          border: `1px solid ${errors.length ? "var(--accent)" : "var(--rule)"}`,
-          borderRadius: "var(--radius-sm)", minHeight: 44,
+          display: "flex",
+          flexWrap: "wrap",
+          alignItems: "center",
+          gap: 4,
+          minHeight: 52,
+          padding: "10px 12px",
+          background: "var(--surface)",
+          border: "2px solid var(--ink)",
+          borderRadius: "var(--radius-md)",
+          outline: "none",
+          boxShadow: focused ? "3px 3px 0 var(--ink-soft)" : "none",
+          cursor: "text",
         }}
-      />
-      {errors.length > 0 && (
-        <div style={{ color: "var(--accent)", fontSize: 12, marginTop: 4, fontFamily: "var(--font-hand)" }}>
-          {errors[0]}
-        </div>
-      )}
-      {/* Token pills (visual echo) */}
+      >
+        {pattern.map((letter, i) => {
+          const undef = definedLetters !== undefined && !defined.has(letter);
+          return (
+            <div
+              key={i}
+              style={undef ? {
+                padding: 2,
+                border: "1.5px dashed var(--accent)",
+                borderRadius: 6,
+              } : undefined}
+            >
+              <LetterBadge letter={letter} size={32} />
+            </div>
+          );
+        })}
+        {focused && (
+          <span
+            className="wf-caret"
+            style={{ height: 34, marginLeft: 2 }}
+          />
+        )}
+      </div>
+
+      {/* Stats line */}
       {pattern.length > 0 && (
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
-          {pattern.map((letter, i) => {
-            const undef = definedLetters !== undefined && !defined.has(letter);
-            return (
-              <div
-                key={i}
-                title={undef ? "no section — create it in the Sections list" : undefined}
-                style={{
-                  padding: undef ? 2 : 0,
-                  border: undef ? "1.5px dashed var(--accent)" : "none",
-                  borderRadius: undef ? "var(--radius-sm)" : undefined,
-                }}
-              >
-                <LetterBadge letter={letter} size={28} />
-              </div>
-            );
-          })}
+        <div style={{
+          marginTop: 6,
+          fontSize: 11,
+          color: "var(--muted-color)",
+          fontFamily: "var(--font-mono)",
+        }}>
+          {pattern.length} section{pattern.length !== 1 ? "s" : ""} · unique: {uniqueLetters.join(" ")}
         </div>
       )}
     </div>
