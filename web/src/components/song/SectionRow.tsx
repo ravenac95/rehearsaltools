@@ -4,6 +4,7 @@ import { LetterBadge } from "./LetterBadge";
 import { StanzaCompact } from "./StanzaCompact";
 import { StanzaExpanded } from "./StanzaExpanded";
 import { TempoEditor } from "./TempoEditor";
+import { NoteGlyph } from "./NoteGlyph";
 
 interface SectionRowProps {
   section: Section;
@@ -46,55 +47,110 @@ export function SectionRow({ section, form, onUpdate, onDelete }: SectionRowProp
       section.bpm, section.note);
   };
 
+  const sectionBpmOverridden = section.bpm !== undefined;
+  const sectionEffBpm = section.bpm ?? form.bpm;
+  const sectionEffNote = section.note ?? form.note;
+
   return (
     <div style={{
-      border: "1px solid var(--rule)", borderRadius: "var(--radius-md)",
-      marginBottom: 8, overflow: "hidden",
+      border: expanded ? "1.5px solid var(--ink)" : "1.5px solid var(--rule)",
+      borderRadius: 10,
+      background: "var(--surface)",
+      overflow: "hidden",
+      marginBottom: 8,
+      boxShadow: expanded ? "2px 2px 0 var(--ink)" : "none",
     }}>
-      {/* Collapsed header — always visible */}
+      {/* Header row — always visible, toggles expand */}
       <div
         onClick={() => setExpanded((x) => !x)}
         style={{
-          display: "flex", alignItems: "center", gap: 10,
-          padding: "10px 12px", cursor: "pointer",
-          background: "var(--surface-alt)",
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+          padding: "8px 10px",
+          borderBottom: expanded ? "1.5px solid var(--rule)" : "none",
+          cursor: "pointer",
         }}
       >
         <LetterBadge letter={section.letter} size={32} />
 
-        {/* Compact stanza strip */}
-        <div style={{
-          flex: 1, display: "flex", gap: 6, overflow: "hidden",
-          maskImage: "linear-gradient(to right, black 80%, transparent 100%)",
-          WebkitMaskImage: "linear-gradient(to right, black 80%, transparent 100%)",
-        }}>
-          {section.stanzas.map((st, i) => (
-            <StanzaCompact
-              key={i}
-              stanza={st}
-              effectiveBpm={effectiveBpm(st, section, form)}
-              effectiveNote={effectiveNote(st, section, form)}
-              bpmInherited={st.bpm === undefined}
-            />
-          ))}
+        {/* Stanza strip with right-edge fade */}
+        <div style={{ flex: 1, minWidth: 0, position: "relative" }}>
+          <div style={{
+            display: "flex",
+            gap: 4,
+            flexWrap: "nowrap",
+            overflow: "hidden",
+            flex: 1,
+            minWidth: 0,
+          }}>
+            {section.stanzas.map((st, i) => (
+              <StanzaCompact
+                key={i}
+                stanza={st}
+                effectiveBpm={effectiveBpm(st, section, form)}
+                effectiveNote={effectiveNote(st, section, form)}
+                bpmInherited={st.bpm === undefined}
+              />
+            ))}
+          </div>
+          {/* Right fade overlay */}
+          <div style={{
+            position: "absolute",
+            right: 0,
+            top: 0,
+            bottom: 0,
+            width: 18,
+            background: "linear-gradient(to right, transparent, var(--surface))",
+            pointerEvents: "none",
+          }} />
         </div>
 
-        {/* Effective section tempo readout */}
-        <span style={{ fontSize: 12, color: "var(--muted-color)", fontFamily: "var(--font-mono)", flexShrink: 0 }}>
-          {section.bpm ?? form.bpm} BPM
-        </span>
+        {/* Compact section BPM readout */}
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 2,
+          fontFamily: "var(--font-mono)",
+          fontSize: 10,
+          fontWeight: sectionBpmOverridden ? 700 : 400,
+          color: sectionBpmOverridden ? "var(--ink)" : "var(--faint)",
+          flexShrink: 0,
+        }}>
+          <NoteGlyph note={sectionEffNote} inherited={!sectionBpmOverridden} size={12} />
+          <span>={sectionEffBpm}</span>
+        </div>
 
-        <span style={{ color: "var(--faint)", flexShrink: 0 }}>{expanded ? "▾" : "▸"}</span>
+        {/* Chevron */}
+        <span style={{
+          fontFamily: "var(--font-hand)",
+          fontSize: 18,
+          color: "var(--muted-color)",
+          flexShrink: 0,
+        }}>
+          {expanded ? "▾" : "▸"}
+        </span>
       </div>
 
-      {/* Expanded stanza editor */}
+      {/* Expanded body */}
       {expanded && (
-        <div style={{ padding: 12, background: "var(--surface)", display: "flex", flexDirection: "column", gap: 8 }}>
+        <div style={{ padding: "8px 10px 10px", display: "flex", flexDirection: "column", gap: 8 }}>
+          {/* Label */}
+          <div style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 9,
+            color: "var(--muted-color)",
+            textTransform: "uppercase",
+            letterSpacing: "0.05em",
+          }}>
+            Editing {section.letter}
+          </div>
+
           {/* Section-level tempo override */}
           <TempoEditor
-            bpm={section.bpm ?? form.bpm}
-            note={section.note ?? form.note}
-            bpmOverridden={section.bpm !== undefined}
+            bpm={sectionEffBpm}
+            note={sectionEffNote}
+            bpmOverridden={sectionBpmOverridden}
             noteOverridden={section.note !== undefined}
             onBpmChange={(v) => onUpdate(section.stanzas, v, section.note)}
             onNoteChange={(v) => onUpdate(section.stanzas, section.bpm, v)}
