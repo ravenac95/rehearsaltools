@@ -10,7 +10,7 @@
 - TASK_REVIEW: approved
 
 ## Tasks
-- [ ] task-01-install-storybook — pending
+- [x] task-01-install-storybook — done
 - [ ] task-02-themtoggle-presentation — pending
 - [ ] task-03-stories-ui-primitives — pending
 - [ ] task-04-stories-simple-song-components — pending
