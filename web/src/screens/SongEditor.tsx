@@ -1,13 +1,14 @@
 import { useState, useEffect, useRef } from "react";
 import { useStore } from "../store";
 import { SongEditorPresentation } from "./SongEditorPresentation";
-import type { NoteValue, Stanza } from "../api/client";
+import type { NoteValue, Stanza, SongForm } from "../api/client";
 
 export function SongEditor() {
   const song = useStore((s) => s.song);
   const createForm = useStore((s) => s.createForm);
   const setActiveForm = useStore((s) => s.setActiveForm);
   const updateForm = useStore((s) => s.updateForm);
+  const deleteForm = useStore((s) => s.deleteForm);
   const upsertSection = useStore((s) => s.upsertSection);
   const deleteSection = useStore((s) => s.deleteSection);
   const updateSongName = useStore((s) => s.updateSongName);
@@ -18,6 +19,7 @@ export function SongEditor() {
 
   const [running, setRunning] = useState(false);
   const [nameDraft, setNameDraft] = useState(song.name);
+  const [pendingDeleteForm, setPendingDeleteForm] = useState<SongForm | null>(null);
   const nameFocusedRef = useRef(false);
 
   // Auto-clear toast after 4s
@@ -93,6 +95,35 @@ export function SongEditor() {
       }}
       onSelectForm={(id) => run(() => setActiveForm(id))}
       onCreateForm={() => run(createForm)}
+      onDeleteForm={(id) => {
+        const form = song.songForms.find((f) => f.id === id);
+        if (!form) return;
+        setPendingDeleteForm(form);
+        run(() => deleteForm(id));
+      }}
+      pendingDeleteForm={pendingDeleteForm}
+      onUndoDeleteForm={async () => {
+        const form = pendingDeleteForm;
+        if (!form) return;
+        setPendingDeleteForm(null);
+        try {
+          // Snapshot existing form ids before createForm so we can identify
+          // the newly-created one even if other forms get added concurrently.
+          const beforeIds = new Set(useStore.getState().song.songForms.map((f) => f.id));
+          await createForm();
+          const fresh = useStore.getState().song;
+          const created = fresh.songForms.filter((f) => !beforeIds.has(f.id));
+          if (created.length !== 1) {
+            throw new Error("could not identify restored form");
+          }
+          await updateForm(created[0].id, {
+            name: form.name, bpm: form.bpm, note: form.note, pattern: form.pattern,
+          });
+        } catch (err: unknown) {
+          setError(String((err as Error).message ?? err));
+        }
+      }}
+      onDismissUndo={() => setPendingDeleteForm(null)}
       onPatternChange={(letters) => run(() => updateForm(activeForm!.id, { pattern: letters }))}
       onFormBpmChange={(bpm) => run(() => updateForm(activeForm!.id, { bpm }))}
       onFormNoteChange={(note: NoteValue) => run(() => updateForm(activeForm!.id, { note }))}

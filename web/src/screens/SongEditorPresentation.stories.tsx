@@ -38,7 +38,9 @@ const typicalSong: Song = {
 
 const baseCallbacks = {
   onNameChange: noop, onNameFocus: noop, onNameBlur: noop,
-  onSelectForm: noop, onCreateForm: noop,
+  onSelectForm: noop, onCreateForm: noop, onDeleteForm: noop,
+  pendingDeleteForm: null,
+  onUndoDeleteForm: noop, onDismissUndo: noop,
   onPatternChange: noop, onFormBpmChange: noop, onFormNoteChange: noop,
   onSectionUpdate: noop, onAddSection: noop, onDeleteSection: noop,
   onRun: noop,
