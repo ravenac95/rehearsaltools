@@ -18,7 +18,7 @@
 - [x] task-06-stanza-compact-two-column — done
 - [x] task-07-stanza-expanded — done
 - [x] task-08-section-row — done
-- [ ] task-09-update-stories — pending
+- [x] task-09-update-stories — done
 
 ## Notes
 - Branch: claude/implement-song-form-wf2-sNVki (designated by environment; per-task commits will land on this branch)
