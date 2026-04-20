@@ -1,63 +1,42 @@
 // web/src/components/song/pattern.ts
-// Pure functions for parsing and serialising the type-string pattern editor.
+// Pure functions for parsing and serialising the WF2 pattern editor.
 // No React imports — pure TypeScript module.
 
 export interface ParseResult {
-  letters: string[];       // expanded flat list of letters
-  errors: TokenError[];    // validation errors (non-fatal — caller decides what to do)
-}
-
-export interface TokenError {
-  token: string;
-  message: string;
+  letters: string[]; // flat list of section letters (A–Z)
 }
 
 /**
- * Parse a whitespace-separated token string into a flat array of section letters.
+ * Parse any string into a flat array of A–Z section letters.
  *
- * Each token must match: /^([A-Z])(?:[x×](\d+))?$/
- *   - "A"    → ["A"]
- *   - "A×2"  → ["A", "A"]
- *   - "Ax3"  → ["A", "A", "A"]
- *   - "a"    → error (lowercase)
- *   - "AB"   → error (multi-char without multiplier)
- *   - "A×0"  → error (multiplier must be >= 1)
- *   - "A×99" → allowed (no upper bound — user controls repetition)
+ * Rules:
+ *  - Any letter a–z / A–Z is kept and auto-uppercased.
+ *  - All other characters (digits, whitespace, symbols, ×) are silently dropped.
  *
- * Invalid tokens are collected in `errors` but valid tokens continue to be
- * expanded. The caller decides whether to commit state based on error count.
+ * Examples:
+ *   "ABC"    → { letters: ["A","B","C"] }
+ *   "aabac"  → { letters: ["A","A","B","A","C"] }
+ *   "A B C"  → { letters: ["A","B","C"] }
+ *   "A1B2C"  → { letters: ["A","B","C"] }
+ *   "A×2"    → { letters: ["A"] }   (× dropped, 2 dropped)
+ *   ""       → { letters: [] }
  */
 export function parsePattern(input: string): ParseResult {
-  const tokens = input.trim().split(/\s+/).filter(Boolean);
   const letters: string[] = [];
-  const errors: TokenError[] = [];
-  const TOKEN_RE = /^([A-Z])(?:[x×](\d+))?$/;
-
-  for (const token of tokens) {
-    const m = TOKEN_RE.exec(token);
-    if (!m) {
-      errors.push({ token, message: `"${token}" is not a valid section token (use A, A×2, Ax3…)` });
-      continue;
+  for (const ch of input) {
+    if (/[a-zA-Z]/.test(ch)) {
+      letters.push(ch.toUpperCase());
     }
-    const letter = m[1];
-    const count = m[2] !== undefined ? parseInt(m[2], 10) : 1;
-    if (count < 1) {
-      errors.push({ token, message: `multiplier must be at least 1` });
-      continue;
-    }
-    for (let i = 0; i < count; i++) letters.push(letter);
   }
-
-  return { letters, errors };
+  return { letters };
 }
 
 /**
- * Serialise a flat array of letters to a display string.
- * No automatic ×N collapsing — what is stored is what is shown.
+ * Serialise a flat array of letters to a compact string with no separator.
  *
- * ["A", "A", "B", "A"] → "A A B A"
+ * ["A", "A", "B", "A"] → "AABA"
  * []                   → ""
  */
 export function serialisePattern(letters: string[]): string {
-  return letters.join(" ");
+  return letters.join("");
 }
