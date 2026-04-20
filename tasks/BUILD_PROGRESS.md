@@ -15,7 +15,7 @@
 - [x] task-03-stories-ui-primitives — done
 - [x] task-04-stories-simple-song-components — done
 - [x] task-05-stories-stateful-song-components — done
-- [ ] task-06-split-dashboard — pending
+- [x] task-06-split-dashboard — done
 - [ ] task-07-split-regions — pending
 - [ ] task-08-split-mixdown — pending
 - [ ] task-09-split-songeditor — pending
