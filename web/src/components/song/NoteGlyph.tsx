@@ -1,13 +1,14 @@
 import type { NoteValue } from "../../api/client";
 
 const GLYPHS: Record<NoteValue, string> = {
-  h: "\u{1D157}",          // half note (void notehead + stem)
-  q: "\u{1D15E}",          // quarter note
+  w: "\u{1D157}",          // whole note (breve notehead, no stem)
+  h: "\u{1D15E}",          // half note (void notehead + stem)
+  q: "\u{1D15F}",          // quarter note
   e: "\u{1D160}",          // eighth note
   s: "\u{1D161}",          // sixteenth note
 };
 const NAMES: Record<NoteValue, string> = {
-  h: "half", q: "quarter", e: "eighth", s: "sixteenth",
+  w: "whole", h: "half", q: "quarter", e: "eighth", s: "sixteenth",
 };
 
 interface NoteGlyphProps {
