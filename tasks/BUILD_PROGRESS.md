@@ -13,7 +13,7 @@
 - [x] task-01-pattern-parser — done
 - [x] task-02-stepper-typeable — done
 - [x] task-03-styles-additions — done
-- [ ] task-04-form-string-editor — pending
+- [x] task-04-form-string-editor — done
 - [ ] task-05-tempo-editor-slider — pending
 - [ ] task-06-stanza-compact-two-column — pending
 - [ ] task-07-stanza-expanded — pending
