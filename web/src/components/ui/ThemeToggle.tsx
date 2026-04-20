@@ -12,20 +12,33 @@ const ICONS: Record<ThemePreference, string> = {
   dark: "☾",
 };
 
-export function ThemeToggle() {
-  const [pref, setPref] = useState<ThemePreference>(getThemePreference);
-  const handleClick = () => {
-    const next = cycleTheme();
-    setPref(next);
-  };
+// ── Presentation ──────────────────────────────────────────────────────────────
+
+interface ThemeTogglePresentationProps {
+  pref: ThemePreference;
+  onCycle: () => void;
+}
+
+export function ThemeTogglePresentation({ pref, onCycle }: ThemeTogglePresentationProps) {
   return (
     <button
       className="chip"
-      onClick={handleClick}
+      onClick={onCycle}
       title={`Theme: ${LABELS[pref]} — tap to cycle`}
       style={{ fontSize: 13, minHeight: 36, padding: "6px 12px" }}
     >
       {ICONS[pref]} {LABELS[pref]}
     </button>
   );
+}
+
+// ── Container ─────────────────────────────────────────────────────────────────
+
+export function ThemeToggle() {
+  const [pref, setPref] = useState<ThemePreference>(getThemePreference);
+  const handleClick = () => {
+    const next = cycleTheme();
+    setPref(next);
+  };
+  return <ThemeTogglePresentation pref={pref} onCycle={handleClick} />;
 }
