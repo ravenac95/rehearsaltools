@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+<title>RehearsalTools</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500&family=Caveat:wght@500;700&display=swap" rel="stylesheet" />
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+/* ── Reset & Variables ─────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --font-body: 'DM Sans', system-ui, sans-serif;
+  --font-mono: 'DM Mono', 'SF Mono', monospace;
+  --font-display: 'Caveat', cursive;
+
+  --surface: #faf9f7;
+  --surface-alt: #f0eee9;
+  --surface-raised: #fff;
+  --ink: #1a1816;
+  --ink-soft: #3d3a34;
+  --muted: #8a8478;
+  --faint: #c4bfb4;
+  --rule: #e2ddd3;
+  --accent: #c73a1d;
+  --accent-soft: rgba(199,58,29,0.08);
+  --green: #2d8a4e;
+  --green-soft: rgba(45,138,78,0.10);
+  --amber: #b8860b;
+  --amber-soft: rgba(184,134,11,0.10);
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+  --shadow-md: 0 2px 8px rgba(0,0,0,0.08);
+
+  /* Letter swatches */
+  --letter-A-bg: #ff8a6b; --letter-A-ink: #5a1a00;
+  --letter-B-bg: #5fb8b0; --letter-B-ink: #003c38;
+  --letter-C-bg: #f5c147; --letter-C-ink: #4a3000;
+  --letter-D-bg: #a08ad6; --letter-D-ink: #1e0050;
+  --letter-E-bg: #9cc48a; --letter-E-ink: #1a3a10;
+  --letter-F-bg: #e89abf; --letter-F-ink: #500030;
+  --letter-G-bg: #7ec8e3; --letter-G-ink: #002a3a;
+  --letter-H-bg: #f4a261; --letter-H-ink: #4a1a00;
+}
+
+[data-theme="dark"] {
+  --surface: #1a1814;
+  --surface-alt: #242119;
+  --surface-raised: #2e2b24;
+  --ink: #f0e9db;
+  --ink-soft: #d4ccbb;
+  --muted: #908878;
+  --faint: #5a5348;
+  --rule: #3a362e;
+  --accent: #f08a4a;
+  --accent-soft: rgba(240,138,74,0.12);
+  --green: #4aba6e;
+  --green-soft: rgba(74,186,110,0.12);
+  --amber: #d4a017;
+  --amber-soft: rgba(212,160,23,0.12);
+
+  --letter-A-bg: #8b3a20; --letter-A-ink: #ffe0d0;
+  --letter-B-bg: #2a6060; --letter-B-ink: #c0f0ee;
+  --letter-C-bg: #7a5e00; --letter-C-ink: #fff0c0;
+  --letter-D-bg: #4a3a80; --letter-D-ink: #e0d8ff;
+  --letter-E-bg: #3a5c28; --letter-E-ink: #d0f0c0;
+  --letter-F-bg: #6a2a50; --letter-F-ink: #ffd8ee;
+  --letter-G-bg: #1e5060; --letter-G-ink: #c0eeff;
+  --letter-H-bg: #7a3a00; --letter-H-ink: #ffe8c0;
+}
+
+html, body, #root {
+  width: 100%; min-height: 100vh; min-height: 100dvh;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.4;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none; user-select: none;
+  overflow: hidden;
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" src="components.jsx"></script>
+<script type="text/babel" src="app.jsx"></script>
+</body>
+</html>
