@@ -3,6 +3,7 @@ import { FormStringEditor } from "../components/song/FormStringEditor";
 import { TempoEditor } from "../components/song/TempoEditor";
 import { SectionRow } from "../components/song/SectionRow";
 import { RunBar } from "../components/song/RunBar";
+import { UndoToast } from "../components/ui/UndoToast";
 import type { Song, SongForm, NoteValue, Stanza } from "../api/client";
 
 interface SongEditorPresentationProps {
@@ -25,6 +26,10 @@ interface SongEditorPresentationProps {
   onNameBlur: () => void;    // container sets nameFocused = false, then commits if dirty
   onSelectForm: (id: string) => void;
   onCreateForm: () => void;
+  onDeleteForm: (id: string) => void;
+  pendingDeleteForm: SongForm | null;
+  onUndoDeleteForm: () => void;
+  onDismissUndo: () => void;
   onPatternChange: (letters: string[]) => void;
   onFormBpmChange: (bpm: number) => void;
   onFormNoteChange: (note: NoteValue) => void;
@@ -51,6 +56,10 @@ export function SongEditorPresentation({
   onNameBlur,
   onSelectForm,
   onCreateForm,
+  onDeleteForm,
+  pendingDeleteForm,
+  onUndoDeleteForm,
+  onDismissUndo,
   onPatternChange,
   onFormBpmChange,
   onFormNoteChange,
@@ -61,12 +70,21 @@ export function SongEditorPresentation({
 }: SongEditorPresentationProps) {
   if (!activeForm) {
     return (
-      <div style={{ padding: "var(--spacing-md)", color: "var(--muted-color)" }}>
-        No song forms yet.
-        <button className="chip" onClick={onCreateForm} style={{ marginLeft: 8 }}>
-          + Create form
-        </button>
-      </div>
+      <>
+        <div style={{ padding: "var(--spacing-md)", color: "var(--muted-color)" }}>
+          No song forms yet.
+          <button className="chip" onClick={onCreateForm} style={{ marginLeft: 8 }}>
+            + Create form
+          </button>
+        </div>
+        {pendingDeleteForm && (
+          <UndoToast
+            message={`Deleted form "${pendingDeleteForm.name}"`}
+            onUndo={onUndoDeleteForm}
+            onDismiss={onDismissUndo}
+          />
+        )}
+      </>
     );
   }
 
@@ -107,6 +125,7 @@ export function SongEditorPresentation({
           activeFormId={song.activeFormId}
           onSelect={onSelectForm}
           onCreate={onCreateForm}
+          onDelete={onDeleteForm}
         />
 
         {/* Pattern string editor */}
@@ -186,6 +205,14 @@ export function SongEditorPresentation({
         loading={running}
         disabled={activeForm.pattern.length === 0 || hasUnresolved}
       />
+
+      {pendingDeleteForm && (
+        <UndoToast
+          message={`Deleted form "${pendingDeleteForm.name}"`}
+          onUndo={onUndoDeleteForm}
+          onDismiss={onDismissUndo}
+        />
+      )}
     </div>
   );
 }

@@ -11,7 +11,7 @@ const twoForms = [makeForm("f1", "Verse"), makeForm("f2", "Chorus")];
 const meta = {
   title: "Song/FormTabs",
   component: FormTabs,
-  args: { onSelect: () => {}, onCreate: () => {} },
+  args: { onSelect: () => {}, onCreate: () => {}, onDelete: () => {} },
 } satisfies Meta<typeof FormTabs>;
 
 export default meta;

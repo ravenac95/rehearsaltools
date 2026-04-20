@@ -1,5 +1,6 @@
 export { LetterBadge } from "./LetterBadge";
 export { TimeSigStack } from "./TimeSigStack";
+export { TimeSigInput } from "./TimeSigInput";
 export { NoteGlyph } from "./NoteGlyph";
 export { TempoEditor } from "./TempoEditor";
 export { StanzaCompact } from "./StanzaCompact";

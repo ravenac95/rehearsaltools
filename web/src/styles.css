@@ -6,6 +6,7 @@
   --font-hand:   'Kalam', 'Comic Sans MS', cursive;
   --font-marker: 'Caveat', 'Comic Sans MS', cursive;
   --font-mono:   'JetBrains Mono', 'Courier New', monospace;
+  --font-music:  'Noto Music', 'Bravura Text', serif;
 
   --radius-sm:   8px;
   --radius-md:   12px;
@@ -317,6 +318,29 @@ select {
 table { width: 100%; border-collapse: collapse; }
 th, td { padding: 8px; text-align: left; border-bottom: 1px solid var(--rule); }
 th { color: var(--muted-color); font-weight: 500; font-size: 13px; }
+
+/* ── Undo toast ──────────────────────────────────────────────────────────── */
+
+.undo-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--surface-raised);
+  color: var(--ink);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-card);
+  font-family: var(--font-hand);
+  font-size: 14px;
+  z-index: 100;
+  max-width: calc(100vw - 32px);
+}
+.undo-toast__msg { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* ── Utilities ───────────────────────────────────────────────────────────── */
 
