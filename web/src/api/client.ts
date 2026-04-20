@@ -3,7 +3,7 @@
 
 // ── Song model types ──────────────────────────────────────────────────────────
 
-export type NoteValue = "w" | "h" | "q" | "e" | "s";
+export type NoteValue = "h" | "q" | "e" | "s";
 
 export interface Stanza {
   bars: number;
