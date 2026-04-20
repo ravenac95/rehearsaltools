@@ -80,7 +80,7 @@ export function SongEditorPresentation({
           onChange={(e) => onNameChange(e.target.value)}
           onFocus={onNameFocus}
           onBlur={onNameBlur}
-          onKeyDown={(e) => { if (e.key === "Enter") { onNameBlur(); e.currentTarget.blur(); } }}
+          onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }}
           style={{
             width: "100%", background: "transparent", border: "none",
             fontFamily: "var(--font-marker)", fontSize: 22, fontWeight: 700,

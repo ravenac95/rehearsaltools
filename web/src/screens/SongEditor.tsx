@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useStore } from "../store";
 import { SongEditorPresentation } from "./SongEditorPresentation";
 import type { NoteValue, Stanza } from "../api/client";
@@ -18,7 +18,7 @@ export function SongEditor() {
 
   const [running, setRunning] = useState(false);
   const [nameDraft, setNameDraft] = useState(song.name);
-  const [nameFocused, setNameFocused] = useState(false);  // focus guard (replaces ref)
+  const nameFocusedRef = useRef(false);
 
   // Auto-clear toast after 4s
   useEffect(() => {
@@ -27,11 +27,13 @@ export function SongEditor() {
     return () => clearTimeout(t);
   }, [toast, clearToast]);
 
-  // Sync name draft from store when not focused
+  // Sync name draft from store when not focused.
+  // Read focus from a ref so a blur doesn't trigger this effect mid-debounce
+  // (which would clobber the draft before updateSongName resolves).
   useEffect(() => {
-    if (nameFocused) return;  // guard: skip while user is editing
+    if (nameFocusedRef.current) return;
     setNameDraft(song.name);
-  }, [song.name, nameFocused]);
+  }, [song.name]);
 
   // Debounce name commit while typing
   useEffect(() => {
@@ -84,9 +86,9 @@ export function SongEditor() {
       nextLetter={nextLetter}
       canAddSection={canAddSection}
       onNameChange={setNameDraft}
-      onNameFocus={() => setNameFocused(true)}
+      onNameFocus={() => { nameFocusedRef.current = true; }}
       onNameBlur={() => {
-        setNameFocused(false);
+        nameFocusedRef.current = false;
         commitName();
       }}
       onSelectForm={(id) => run(() => setActiveForm(id))}
