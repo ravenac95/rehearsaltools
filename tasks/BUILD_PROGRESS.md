@@ -10,7 +10,7 @@
 - TASK_REVIEW: approved (via plan mode ExitPlanMode)
 
 ## Tasks
-- [ ] task-01-pattern-parser — pending
+- [x] task-01-pattern-parser — done
 - [ ] task-02-stepper-typeable — pending
 - [ ] task-03-styles-additions — pending
 - [ ] task-04-form-string-editor — pending
