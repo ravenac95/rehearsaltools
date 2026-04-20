@@ -34,6 +34,16 @@ export function FormStringEditor({ pattern, onChange, definedLetters }: FormStri
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    // Let browser shortcuts (copy/paste/select-all, etc.) fall through.
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    // Let keyboard navigation keys fall through (don't trap focus).
+    if (
+      e.key === "Tab" ||
+      e.key === "ArrowLeft" || e.key === "ArrowRight" ||
+      e.key === "ArrowUp" || e.key === "ArrowDown" ||
+      e.key === "Home" || e.key === "End" ||
+      e.key === "PageUp" || e.key === "PageDown"
+    ) return;
     if (/^[a-zA-Z]$/.test(e.key)) {
       onChange([...pattern, e.key.toUpperCase()]);
       e.preventDefault();
@@ -46,7 +56,7 @@ export function FormStringEditor({ pattern, onChange, definedLetters }: FormStri
       e.preventDefault();
       return;
     }
-    // All other keys: shake and swallow
+    // Other unsupported keys: shake and swallow
     triggerShake();
     e.preventDefault();
   };

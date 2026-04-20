@@ -70,10 +70,12 @@ export function TempoEditor({
       <input
         type="range"
         className="wf-slider"
-        min={40}
-        max={240}
+        min={20}
+        max={999}
         step={1}
         value={bpm}
+        aria-label="BPM"
+        aria-valuetext={`${bpm} BPM`}
         onChange={e => onBpmChange(+e.target.value)}
         style={{ flex: 1 }}
       />

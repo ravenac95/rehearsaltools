@@ -18,6 +18,7 @@ export function StanzaExpanded({
 }: StanzaExpandedProps) {
   const DENOMS = [1,2,4,8,16,32,64];
   const bpmInherited = stanza.bpm === undefined;
+  const noteInherited = stanza.note === undefined;
 
   return (
     <div style={{
@@ -31,6 +32,7 @@ export function StanzaExpanded({
         effectiveBpm={effectiveBpm}
         effectiveNote={effectiveNote}
         bpmInherited={bpmInherited}
+        noteInherited={noteInherited}
       />
 
       {/* Bars + time sig row */}

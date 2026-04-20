@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useId, useState, useRef } from "react";
 
 interface StepperProps {
   label: string;
@@ -14,6 +14,7 @@ interface StepperProps {
 export function Stepper({ label, value, min, max, step = 1, onChange, unit, mono = false }: StepperProps) {
   const [draft, setDraft] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const inputId = useId();
 
   const clamp = (n: number) => {
     let v = n;
@@ -56,6 +57,8 @@ export function Stepper({ label, value, min, max, step = 1, onChange, unit, mono
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Let browser shortcuts (copy/paste/select-all, etc.) fall through.
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
     const allowed = ["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Tab", "Enter", "Escape"];
     if (e.key === "Enter") {
       commitDraft(draft ?? String(value));
@@ -78,13 +81,14 @@ export function Stepper({ label, value, min, max, step = 1, onChange, unit, mono
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-      <label style={{ fontSize: 12, color: "var(--muted-color)", fontFamily: "var(--font-hand)" }}>
+      <label htmlFor={inputId} style={{ fontSize: 12, color: "var(--muted-color)", fontFamily: "var(--font-hand)" }}>
         {label}
       </label>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <button className="chip" onClick={dec} style={{ minHeight: 36, padding: "4px 12px" }}>–</button>
+        <button className="chip" onClick={dec} aria-label={`Decrease ${label}`} style={{ minHeight: 36, padding: "4px 12px" }}>–</button>
         <input
           ref={inputRef}
+          id={inputId}
           type="text"
           inputMode="numeric"
           value={displayValue}
@@ -105,7 +109,7 @@ export function Stepper({ label, value, min, max, step = 1, onChange, unit, mono
           }}
         />
         {unit ? <span style={{ fontSize: 13, color: "var(--muted-color)", marginLeft: 2 }}>{unit}</span> : null}
-        <button className="chip" onClick={inc} style={{ minHeight: 36, padding: "4px 12px" }}>+</button>
+        <button className="chip" onClick={inc} aria-label={`Increase ${label}`} style={{ minHeight: 36, padding: "4px 12px" }}>+</button>
       </div>
     </div>
   );

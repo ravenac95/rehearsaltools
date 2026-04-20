@@ -91,6 +91,7 @@ export function SectionRow({ section, form, onUpdate, onDelete }: SectionRowProp
                 effectiveBpm={effectiveBpm(st, section, form)}
                 effectiveNote={effectiveNote(st, section, form)}
                 bpmInherited={st.bpm === undefined}
+                noteInherited={st.note === undefined}
               />
             ))}
           </div>
@@ -117,7 +118,7 @@ export function SectionRow({ section, form, onUpdate, onDelete }: SectionRowProp
           color: sectionBpmOverridden ? "var(--ink)" : "var(--faint)",
           flexShrink: 0,
         }}>
-          <NoteGlyph note={sectionEffNote} inherited={!sectionBpmOverridden} size={12} />
+          <NoteGlyph note={sectionEffNote} inherited={section.note === undefined} size={12} />
           <span>={sectionEffBpm}</span>
         </div>
 

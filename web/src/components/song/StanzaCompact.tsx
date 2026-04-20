@@ -7,9 +7,10 @@ interface StanzaCompactProps {
   effectiveBpm: number;
   effectiveNote: NoteValue;
   bpmInherited: boolean;
+  noteInherited: boolean;
 }
 
-export function StanzaCompact({ stanza, effectiveBpm, effectiveNote, bpmInherited }: StanzaCompactProps) {
+export function StanzaCompact({ stanza, effectiveBpm, effectiveNote, bpmInherited, noteInherited }: StanzaCompactProps) {
   return (
     <div style={{
       display: "flex",
@@ -62,7 +63,7 @@ export function StanzaCompact({ stanza, effectiveBpm, effectiveNote, bpmInherite
           fontWeight: bpmInherited ? 400 : 700,
           color: bpmInherited ? "var(--faint)" : "var(--ink)",
         }}>
-          <NoteGlyph note={effectiveNote} inherited={bpmInherited} size={11} />
+          <NoteGlyph note={effectiveNote} inherited={noteInherited} size={11} />
           <span>={effectiveBpm}</span>
         </div>
       </div>
