@@ -2,17 +2,16 @@ import { useEffect, useState } from "react";
 import { connectWs } from "./api/client";
 import { useStore } from "./store";
 import { Dashboard } from "./screens/Dashboard";
-import { Sections } from "./screens/Sections";
-import { SongForm } from "./screens/SongForm";
+import { SongEditor } from "./screens/SongEditor";
 import { Regions } from "./screens/Regions";
 import { Mixdown } from "./screens/Mixdown";
+import { ThemeToggle } from "./components/ui";
 
-type Tab = "dashboard" | "sections" | "songform" | "regions" | "mixdown";
+type Tab = "dashboard" | "song" | "regions" | "mixdown";
 
 const TABS: Array<{ id: Tab; label: string }> = [
   { id: "dashboard", label: "Transport" },
-  { id: "songform",  label: "Song Form" },
-  { id: "sections",  label: "Sections"  },
+  { id: "song",      label: "Song"      },
   { id: "regions",   label: "Regions"   },
   { id: "mixdown",   label: "Mixdown"   },
 ];
@@ -45,6 +44,10 @@ export function App() {
 
   return (
     <div className="app">
+      <div className="app-header">
+        <span className="app-header__title">RehearsalTools</span>
+        <ThemeToggle />
+      </div>
       <div className="tabs">
         {TABS.map((t) => (
           <button
@@ -58,11 +61,10 @@ export function App() {
       </div>
 
       <div className="screen">
-        {tab === "dashboard" && <Dashboard />}
-        {tab === "sections"  && <Sections  />}
-        {tab === "songform"  && <SongForm  />}
-        {tab === "regions"   && <Regions   />}
-        {tab === "mixdown"   && <Mixdown   />}
+        {tab === "dashboard" && <Dashboard   />}
+        {tab === "song"      && <SongEditor  />}
+        {tab === "regions"   && <Regions     />}
+        {tab === "mixdown"   && <Mixdown     />}
       </div>
 
       <div className="status-bar">
@@ -71,7 +73,7 @@ export function App() {
           {transport.bpm ? `${Math.round(transport.bpm)} BPM` : ""}
           {transport.num ? ` • ${transport.num}/${transport.denom}` : ""}
         </span>
-        {error && <span style={{ color: "#e54" }}>{error}</span>}
+        {error && <span style={{ color: "var(--accent)" }}>{error}</span>}
       </div>
     </div>
   );

@@ -13,22 +13,21 @@ import { AppState, nativeEventToTransportPatch } from "./state.js";
 import { OscClient, ReaperNativeClient, RtClient } from "./osc/client.js";
 import { OscServerWrapper } from "./osc/server.js";
 import { WebRemoteClient } from "./reaper/web-remote.js";
-import { SectionsStore } from "./store/sections.js";
+import { SongStore } from "./store/song.js";
 import { WsHub } from "./ws.js";
 
 import transportRoutes from "./routes/transport.js";
 import projectRoutes   from "./routes/project.js";
 import regionsRoutes   from "./routes/regions.js";
 import mixdownRoutes   from "./routes/mixdown.js";
-import sectionsRoutes  from "./routes/sections.js";
-import songformRoutes  from "./routes/songform.js";
+import songRoutes      from "./routes/song.js";
 import debugRoutes     from "./routes/debug.js";
 
 async function main() {
   const config = loadConfig();
 
   // ── Stores ────────────────────────────────────────────────────────────────
-  const store = new SectionsStore(config.dataFile);
+  const store = new SongStore(config.dataFile);
   await store.load();
 
   const state = new AppState();
@@ -69,8 +68,7 @@ async function main() {
   await app.register(projectRoutes(rt));
   await app.register(regionsRoutes({ rt, webRemote }));
   await app.register(mixdownRoutes(rt));
-  await app.register(sectionsRoutes(store));
-  await app.register(songformRoutes({ store, rt, webRemote, state, ws }));
+  await app.register(songRoutes({ store, rt, webRemote, state, ws }));
   await app.register(debugRoutes(rt));
 
   app.get("/ws", { websocket: true }, (socket /* WebSocket */) => {
@@ -82,8 +80,7 @@ async function main() {
       data: {
         transport: state.transport,
         currentTake: state.currentTake,
-        sections: store.listSections(),
-        songForm: store.getSongForm(),
+        song: store.getSong(),
       },
     }));
   });

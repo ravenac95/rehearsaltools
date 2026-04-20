@@ -1,5 +1,10 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { useStore } from "../src/store";
+import type { Song } from "../src/api/client";
+
+const EMPTY_SONG: Song = {
+  id: "", name: "", sections: [], songForms: [], activeFormId: null,
+};
 
 describe("store applyWsMessage", () => {
   it("transport message patches transport state", () => {
@@ -27,18 +32,36 @@ describe("store applyWsMessage", () => {
   });
 
   it("snapshot message populates the store", () => {
-    useStore.setState({ sections: [], songForm: { sectionIds: [] } });
+    useStore.setState({ song: EMPTY_SONG });
     useStore.getState().applyWsMessage({
       type: "snapshot",
       data: {
         transport: { bpm: 100 },
         currentTake: null,
-        sections: [{ id: "a", name: "A", rows: [] }],
-        songForm: { sectionIds: ["a"] },
+        song: {
+          id: "s1", name: "T", sections: [], activeFormId: "f1",
+          songForms: [{ id: "f1", name: "1", bpm: 100, note: "q", pattern: [] }],
+        },
       },
     } as any);
-    expect(useStore.getState().sections).toHaveLength(1);
-    expect(useStore.getState().songForm.sectionIds).toEqual(["a"]);
+    expect(useStore.getState().song.id).toBe("s1");
     expect(useStore.getState().transport.bpm).toBe(100);
+  });
+
+  it("deleteSection surfaces warning toast", async () => {
+    useStore.setState({ song: EMPTY_SONG, toast: null });
+
+    // Mock the api module
+    const { api } = await import("../src/api/client");
+    const spy = vi.spyOn(api, "deleteSection").mockResolvedValueOnce({
+      ok: true,
+      song: EMPTY_SONG,
+      warning: "Removed A from forms: 1",
+    } as any);
+
+    await useStore.getState().deleteSection("A");
+
+    expect(useStore.getState().toast).toBe("Removed A from forms: 1");
+    spy.mockRestore();
   });
 });

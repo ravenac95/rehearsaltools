@@ -1,15 +1,43 @@
 // web/src/api/client.ts
-// REST + WebSocket client.
+// REST + WebSocket client — updated for the new Song/SongForm/Section/Stanza model.
 
-export interface SectionRow {
-  bars: number; num: number; denom: number; bpm: number;
+// ── Song model types ──────────────────────────────────────────────────────────
+
+export type NoteValue = "w" | "h" | "q" | "e" | "s";
+
+export interface Stanza {
+  bars: number;
+  num: number;
+  denom: number;
+  bpm?: number;
+  note?: NoteValue;
 }
+
 export interface Section {
-  id: string; name: string; rows: SectionRow[];
+  letter: string;
+  stanzas: Stanza[];
+  bpm?: number;
+  note?: NoteValue;
 }
+
 export interface SongForm {
-  sectionIds: string[];
+  id: string;
+  name: string;
+  bpm: number;
+  note: NoteValue;
+  pattern: string[];
 }
+
+export interface Song {
+  id: string;
+  name: string;
+  sections: Section[];
+  songForms: SongForm[];
+  activeFormId: string | null;
+}
+
+// ── Other app types ───────────────────────────────────────────────────────────
+
 export interface Region {
   id: number; name: string; start: number; stop: number;
 }
@@ -19,6 +47,8 @@ export interface TransportState {
   metronome: boolean;
 }
 export interface Take { startTime: number; }
+
+// ── HTTP helper ───────────────────────────────────────────────────────────────
 
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, {
@@ -31,6 +61,8 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
   }
   return body as T;
 }
+
+// ── API ───────────────────────────────────────────────────────────────────────
 
 export const api = {
   // Transport
@@ -58,27 +90,25 @@ export const api = {
     req(`/api/regions/${id}/play`, { method: "POST", body: JSON.stringify({}) }),
   seekToEnd: () => req<{ position: number }>("/api/playhead/end", { method: "POST", body: JSON.stringify({}) }),
 
-  // Sections
-  listSections: () => req<{ sections: Section[] }>("/api/sections"),
-  createSection: (name: string, rows: SectionRow[]) =>
-    req<{ section: Section }>("/api/sections",
-      { method: "POST", body: JSON.stringify({ name, rows }) }),
-  updateSection: (id: string, name: string, rows: SectionRow[]) =>
-    req<{ section: Section }>(`/api/sections/${id}`,
-      { method: "PUT", body: JSON.stringify({ name, rows }) }),
-  deleteSection: (id: string) =>
-    req(`/api/sections/${id}`, { method: "DELETE", body: JSON.stringify({}) }),
-
-  // Song form
-  getSongForm: () => req<{
-    songForm: SongForm; totalBars: number;
-    flat: Array<{ barOffset: number; num: number; denom: number; bpm: number }>;
-  }>("/api/songform"),
-  setSongForm: (sectionIds: string[]) =>
-    req<{ songForm: SongForm }>("/api/songform",
-      { method: "PUT", body: JSON.stringify({ sectionIds }) }),
-  writeSongForm: (regionName?: string) =>
-    req<{ startTime: number }>("/api/songform/write",
+  // Song
+  getSong: () => req<{ song: Song }>("/api/song"),
+  updateSong: (partial: Partial<Pick<Song, "name" | "activeFormId">>) =>
+    req<{ song: Song }>("/api/song", { method: "PUT", body: JSON.stringify(partial) }),
+  upsertSection: (letter: string, stanzas: Stanza[], bpm?: number, note?: NoteValue) =>
+    req<{ song: Song }>(`/api/song/sections/${letter}`,
+      { method: "PUT", body: JSON.stringify({ stanzas, bpm, note }) }),
+  deleteSection: (letter: string) =>
+    req<{ song: Song; warning: string | null }>(`/api/song/sections/${letter}`,
+      { method: "DELETE", body: JSON.stringify({}) }),
+  createForm: () =>
+    req<{ song: Song }>("/api/song/forms", { method: "POST", body: JSON.stringify({}) }),
+  updateForm: (id: string, partial: Partial<Pick<SongForm, "name" | "bpm" | "pattern" | "note">>) =>
+    req<{ song: Song }>(`/api/song/forms/${id}`,
+      { method: "PUT", body: JSON.stringify(partial) }),
+  deleteForm: (id: string) =>
+    req<{ song: Song }>(`/api/song/forms/${id}`, { method: "DELETE", body: JSON.stringify({}) }),
+  writeActiveForm: (id: string, regionName?: string) =>
+    req<{ ok: boolean; startTime: number }>(`/api/song/forms/${id}/write`,
       { method: "POST", body: JSON.stringify({ regionName }) }),
 
   // Mixdown
@@ -91,10 +121,10 @@ export const api = {
       { method: "POST", body: JSON.stringify({ enabled }) }),
 };
 
-// ── WebSocket ──────────────────────────────────────────────────────────────
+// ── WebSocket ─────────────────────────────────────────────────────────────────
 
 export type WsMessage =
-  | { type: "snapshot"; data: { transport: Partial<TransportState>; currentTake: Take | null; sections: Section[]; songForm: SongForm } }
+  | { type: "snapshot"; data: { transport: Partial<TransportState>; currentTake: Take | null; song: Song } }
   | { type: "transport"; data: TransportState }
   | { type: "songform:written"; data: { startTime: number; regionName?: string } }
   | { type: string; data: unknown };
