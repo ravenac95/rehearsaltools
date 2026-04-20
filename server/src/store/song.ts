@@ -151,7 +151,7 @@ export class SongStore {
   private data: StoreShape = { song: emptySong(), revisions: [] };
   private loaded = false;
 
-  constructor(private filePath: string) {}
+  constructor(private filePath: string) { }
 
   async load(): Promise<void> {
     try {
@@ -242,11 +242,11 @@ export class SongStore {
     // Auto-name: smallest positive integer (as string) not already in use
     const usedNames = new Set(this.data.song.songForms.map((f) => f.name));
     let n = 1;
-    while (usedNames.has(String(n))) n++;
+    while (usedNames.has(`Form ${n}`)) n++;
 
     const form: SongForm = {
       id: randomUUID(),
-      name: String(n),
+      name: `Form ${n}`,
       bpm: 100,
       note: "q",
       pattern: [],

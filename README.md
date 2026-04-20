@@ -160,7 +160,7 @@ handling), not OSC responses sent back to the client.
 | Command | Payload fields | Internal Lua return value |
 |---------|---------------|---------------------------|
 | `project.new` | *(none)* | `{"ok":true}` |
-| `tempo` | `bpm` (number, 20–999) | `{"bpm":<n>}` |
+| `tempo` | `bpm` (number, 20–300) | `{"bpm":<n>}` |
 | `timesig` | `numerator`, `denominator`, `measure?` | `{"numerator":<n>,"denominator":<n>,"measure":<n>}` |
 | `mixdown.all` | `output_dir?` (string) | `{"output_dir":"...","region_count":<n>}` |
 | `songform.write` | `rows` (array), `startTime` (number), `regionName?` | `{"regionId":<n>,"startTime":<n>,"rows":[...]}` |

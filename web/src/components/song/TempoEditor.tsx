@@ -71,7 +71,7 @@ export function TempoEditor({
         type="range"
         className="wf-slider"
         min={20}
-        max={999}
+        max={300}
         step={1}
         value={bpm}
         aria-label="BPM"
