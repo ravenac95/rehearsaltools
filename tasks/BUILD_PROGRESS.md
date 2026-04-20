@@ -14,7 +14,7 @@
 - [x] task-02-stepper-typeable — done
 - [x] task-03-styles-additions — done
 - [x] task-04-form-string-editor — done
-- [ ] task-05-tempo-editor-slider — pending
+- [x] task-05-tempo-editor-slider — done
 - [ ] task-06-stanza-compact-two-column — pending
 - [ ] task-07-stanza-expanded — pending
 - [ ] task-08-section-row — pending
