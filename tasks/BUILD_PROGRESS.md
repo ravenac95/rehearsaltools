@@ -14,7 +14,7 @@
 - [x] task-02-themtoggle-presentation — done
 - [x] task-03-stories-ui-primitives — done
 - [x] task-04-stories-simple-song-components — done
-- [ ] task-05-stories-stateful-song-components — pending
+- [x] task-05-stories-stateful-song-components — done
 - [ ] task-06-split-dashboard — pending
 - [ ] task-07-split-regions — pending
 - [ ] task-08-split-mixdown — pending
