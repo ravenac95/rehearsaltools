@@ -13,7 +13,7 @@
 - [x] task-01-install-storybook — done
 - [x] task-02-themtoggle-presentation — done
 - [x] task-03-stories-ui-primitives — done
-- [ ] task-04-stories-simple-song-components — pending
+- [x] task-04-stories-simple-song-components — done
 - [ ] task-05-stories-stateful-song-components — pending
 - [ ] task-06-split-dashboard — pending
 - [ ] task-07-split-regions — pending
