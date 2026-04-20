@@ -107,15 +107,18 @@ export function SongEditor() {
         if (!form) return;
         setPendingDeleteForm(null);
         try {
+          // Snapshot existing form ids before createForm so we can identify
+          // the newly-created one even if other forms get added concurrently.
+          const beforeIds = new Set(useStore.getState().song.songForms.map((f) => f.id));
           await createForm();
-          // The new form is appended; recover its id from the freshest store snapshot.
           const fresh = useStore.getState().song;
-          const restored = fresh.songForms[fresh.songForms.length - 1];
-          if (restored) {
-            await updateForm(restored.id, {
-              name: form.name, bpm: form.bpm, note: form.note, pattern: form.pattern,
-            });
+          const created = fresh.songForms.filter((f) => !beforeIds.has(f.id));
+          if (created.length !== 1) {
+            throw new Error("could not identify restored form");
           }
+          await updateForm(created[0].id, {
+            name: form.name, bpm: form.bpm, note: form.note, pattern: form.pattern,
+          });
         } catch (err: unknown) {
           setError(String((err as Error).message ?? err));
         }
