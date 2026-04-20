@@ -172,11 +172,8 @@ export function SectionRow({ section, form, onUpdate, onDelete }: SectionRowProp
               {expandedStanzaIdx === i && (
                 <StanzaExpanded
                   stanza={st}
-                  index={i}
                   effectiveBpm={effectiveBpm(st, section, form)}
                   effectiveNote={effectiveNote(st, section, form)}
-                  formBpm={form.bpm}
-                  sectionBpm={section.bpm}
                   onChange={(updated) => updateStanza(i, updated)}
                   onDelete={() => deleteStanza(i)}
                   onDuplicate={() => duplicateStanza(i)}

@@ -9,10 +9,8 @@ const meta = {
   component: StanzaExpanded,
   args: {
     stanza: base,
-    index: 0,
     effectiveBpm: 120,
     effectiveNote: "q",
-    formBpm: 120,
     onChange: () => {},
     onDelete: () => {},
     onDuplicate: () => {},
@@ -24,7 +22,7 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
 export const WithSectionBpmOverride: Story = {
-  args: { sectionBpm: 100, effectiveBpm: 140, stanza: { ...base, bpm: 140 } },
+  args: { effectiveBpm: 140, stanza: { ...base, bpm: 140 } },
 };
 export const NoteOverride: Story = {
   args: { stanza: { ...base, note: "h" }, effectiveNote: "h" },

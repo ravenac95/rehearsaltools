@@ -5,11 +5,8 @@ import { StanzaCompact } from "./StanzaCompact";
 
 interface StanzaExpandedProps {
   stanza: Stanza;
-  index: number;
   effectiveBpm: number;
   effectiveNote: NoteValue;
-  formBpm: number;
-  sectionBpm?: number;
   onChange: (updated: Stanza) => void;
   onDelete: () => void;
   onDuplicate: () => void;

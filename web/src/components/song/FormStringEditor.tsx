@@ -1,5 +1,6 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { LetterBadge } from "./LetterBadge";
+import { parsePattern } from "./pattern";
 
 interface FormStringEditorProps {
   pattern: string[];
@@ -19,6 +20,18 @@ export function FormStringEditor({ pattern, onChange, definedLetters }: FormStri
     setShaking(true);
     shakeTimer.current = setTimeout(() => setShaking(false), 240);
   }, []);
+
+  useEffect(() => () => {
+    if (shakeTimer.current) clearTimeout(shakeTimer.current);
+  }, []);
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const text = e.clipboardData.getData("text");
+    const letters = parsePattern(text).letters;
+    if (letters.length) onChange([...pattern, ...letters]);
+    else triggerShake();
+  };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (/^[a-zA-Z]$/.test(e.key)) {
@@ -73,6 +86,7 @@ export function FormStringEditor({ pattern, onChange, definedLetters }: FormStri
         role="textbox"
         aria-label="Form pattern editor"
         onKeyDown={handleKeyDown}
+        onPaste={handlePaste}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
         className={shaking ? "wf-shake" : undefined}

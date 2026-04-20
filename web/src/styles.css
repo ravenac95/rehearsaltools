@@ -380,6 +380,4 @@ input[type="range"].wf-slider::-moz-range-thumb {
   background: var(--ink);
   border: 2px solid var(--surface);
   cursor: pointer;
-  border: none;
-  box-shadow: 0 0 0 2px var(--surface);
 }
