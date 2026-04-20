@@ -17,7 +17,7 @@
 - [x] task-05-stories-stateful-song-components — done
 - [x] task-06-split-dashboard — done
 - [x] task-07-split-regions — done
-- [ ] task-08-split-mixdown — pending
+- [x] task-08-split-mixdown — done
 - [ ] task-09-split-songeditor — pending
 - [ ] task-10-final-verification — pending
 
