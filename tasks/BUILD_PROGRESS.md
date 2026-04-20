@@ -16,7 +16,7 @@
 - [x] task-04-form-string-editor — done
 - [x] task-05-tempo-editor-slider — done
 - [x] task-06-stanza-compact-two-column — done
-- [ ] task-07-stanza-expanded — pending
+- [x] task-07-stanza-expanded — done
 - [ ] task-08-section-row — pending
 - [ ] task-09-update-stories — pending
 
