@@ -1,6 +1,7 @@
 import type { Stanza, NoteValue } from "../../api/client";
 import { Stepper } from "../ui/Stepper";
 import { TempoEditor } from "./TempoEditor";
+import { StanzaCompact } from "./StanzaCompact";
 
 interface StanzaExpandedProps {
   stanza: Stanza;
@@ -19,6 +20,7 @@ export function StanzaExpanded({
   onChange, onDelete, onDuplicate,
 }: StanzaExpandedProps) {
   const DENOMS = [1,2,4,8,16,32,64];
+  const bpmInherited = stanza.bpm === undefined;
 
   return (
     <div style={{
@@ -26,6 +28,14 @@ export function StanzaExpanded({
       border: "1px solid var(--rule)", borderRadius: "var(--radius-md)",
       display: "flex", flexDirection: "column", gap: 12,
     }}>
+      {/* Live preview summary */}
+      <StanzaCompact
+        stanza={stanza}
+        effectiveBpm={effectiveBpm}
+        effectiveNote={effectiveNote}
+        bpmInherited={bpmInherited}
+      />
+
       {/* Bars + time sig row */}
       <div style={{ display: "flex", gap: 12, alignItems: "flex-end", flexWrap: "wrap" }}>
         <Stepper label="Bars" value={stanza.bars} min={1} onChange={(v) => onChange({ ...stanza, bars: v })} />
