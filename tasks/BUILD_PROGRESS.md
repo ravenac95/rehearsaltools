@@ -1,16 +1,25 @@
 # Build Progress
 
-## Status: PLANNING
+## Status: IMPLEMENTING
 
 ## Pipeline State
 - BRAINSTORM: skipped
-- DISCOVERY: pending
-- USER_Q&A: pending
-- GENERATE: pending
-- TASK_REVIEW: pending
+- DISCOVERY: done
+- USER_Q&A: done
+- GENERATE: done
+- TASK_REVIEW: approved
 
 ## Tasks
-(to be populated after GENERATE)
+- [ ] task-01-install-storybook — pending
+- [ ] task-02-themtoggle-presentation — pending
+- [ ] task-03-stories-ui-primitives — pending
+- [ ] task-04-stories-simple-song-components — pending
+- [ ] task-05-stories-stateful-song-components — pending
+- [ ] task-06-split-dashboard — pending
+- [ ] task-07-split-regions — pending
+- [ ] task-08-split-mixdown — pending
+- [ ] task-09-split-songeditor — pending
+- [ ] task-10-final-verification — pending
 
 ## Notes
 - Branch: claude/storybook-ui-components-FJ92C
