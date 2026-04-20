@@ -1,5 +1,4 @@
 import type { NoteValue } from "../../api/client";
-import { Stepper } from "../ui/Stepper";
 import { NoteGlyph } from "./NoteGlyph";
 
 const NOTE_ORDER: NoteValue[] = ["w", "h", "q", "e", "s"];
@@ -25,33 +24,85 @@ export function TempoEditor({
   };
 
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-      <Stepper
-        label="BPM"
-        value={bpm}
-        min={20} max={999}
-        mono
-        onChange={onBpmChange}
-      />
-      {bpmOverridden && onBpmClear && (
-        <button className="chip ghost" onClick={onBpmClear}
-          style={{ fontSize: 11, minHeight: 28, padding: "2px 8px" }}
-          title="Remove BPM override">×</button>
-      )}
-      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-        <label style={{ fontSize: 12, color: "var(--muted-color)", fontFamily: "var(--font-hand)" }}>Note</label>
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <button className="chip" onClick={cycleNote}
-            style={{ minHeight: 36, padding: "4px 10px" }}>
-            <NoteGlyph note={note} inherited={!noteOverridden} />
-          </button>
-          {noteOverridden && onNoteClear && (
-            <button className="chip ghost" onClick={onNoteClear}
-              style={{ fontSize: 11, minHeight: 28, padding: "2px 8px" }}
-              title="Remove note override">×</button>
-          )}
-        </div>
+    <div style={{
+      display: "flex",
+      alignItems: "center",
+      gap: 8,
+      border: "1.5px solid var(--ink)",
+      borderRadius: "var(--radius-sm)",
+      background: "var(--surface)",
+      padding: "6px 10px",
+      flexWrap: "nowrap",
+    }}>
+      {/* Note picker */}
+      <button
+        className="chip"
+        onClick={cycleNote}
+        style={{ minHeight: 36, padding: "4px 10px", flexShrink: 0 }}
+      >
+        <NoteGlyph note={note} inherited={!noteOverridden} />
+      </button>
+
+      {/* = separator */}
+      <span style={{
+        fontFamily: "var(--font-mono)",
+        fontSize: 10,
+        color: "var(--muted-color)",
+        flexShrink: 0,
+      }}>
+        =
+      </span>
+
+      {/* Value display */}
+      <div style={{
+        fontFamily: "var(--font-marker)",
+        fontSize: 24,
+        fontWeight: 700,
+        minWidth: 40,
+        lineHeight: 1,
+        color: bpmOverridden ? "var(--ink)" : "var(--faint)",
+        flexShrink: 0,
+      }}>
+        {bpm}
       </div>
+
+      {/* Slider */}
+      <input
+        type="range"
+        className="wf-slider"
+        min={20}
+        max={999}
+        step={1}
+        value={bpm}
+        aria-label="BPM"
+        aria-valuetext={`${bpm} BPM`}
+        onChange={e => onBpmChange(+e.target.value)}
+        style={{ flex: 1 }}
+      />
+
+      {/* Note clear × */}
+      {noteOverridden && onNoteClear && (
+        <button
+          className="chip ghost"
+          onClick={onNoteClear}
+          style={{ fontSize: 11, minHeight: 28, padding: "2px 8px", flexShrink: 0 }}
+          title="Remove note override"
+        >
+          ×
+        </button>
+      )}
+
+      {/* BPM clear × */}
+      {bpmOverridden && onBpmClear && (
+        <button
+          className="chip ghost"
+          onClick={onBpmClear}
+          style={{ fontSize: 11, minHeight: 28, padding: "2px 8px", flexShrink: 0 }}
+          title="Remove BPM override"
+        >
+          ×
+        </button>
+      )}
     </div>
   );
 }
