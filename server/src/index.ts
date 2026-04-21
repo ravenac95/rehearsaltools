@@ -14,6 +14,7 @@ import { OscClient, ReaperNativeClient, RtClient } from "./osc/client.js";
 import { OscServerWrapper } from "./osc/server.js";
 import { WebRemoteClient } from "./reaper/web-remote.js";
 import { SongStore } from "./store/song.js";
+import { PrefsStore } from "./store/prefs.js";
 import { WsHub } from "./ws.js";
 
 import transportRoutes from "./routes/transport.js";
@@ -22,6 +23,8 @@ import regionsRoutes   from "./routes/regions.js";
 import mixdownRoutes   from "./routes/mixdown.js";
 import songRoutes      from "./routes/song.js";
 import debugRoutes     from "./routes/debug.js";
+import rehearsalRoutes from "./routes/rehearsal.js";
+import songsRoutes     from "./routes/songs.js";
 
 async function main() {
   const config = loadConfig();
@@ -30,8 +33,23 @@ async function main() {
   const store = new SongStore(config.dataFile);
   await store.load();
 
+  const prefs = new PrefsStore(config.prefsFile);
+  await prefs.load();
+
   const state = new AppState();
   const ws = new WsHub();
+
+  // Seed currentRehearsalTypeId from prefs, falling back to the first
+  // configured type. Persist the fallback so future boots are stable.
+  const persistedTypeId = prefs.getRehearsalTypeId();
+  const seedType =
+    config.rehearsalTypes.find((t) => t.id === persistedTypeId) ??
+    config.rehearsalTypes[0] ??
+    null;
+  state.currentRehearsalTypeId = seedType?.id ?? null;
+  if (seedType && persistedTypeId !== seedType.id) {
+    await prefs.setRehearsalTypeId(seedType.id);
+  }
 
   // ── OSC out ───────────────────────────────────────────────────────────────
   // One UDP client to REAPER's OSC port, shared by both native + /rt/* clients.
@@ -70,17 +88,24 @@ async function main() {
   await app.register(mixdownRoutes(rt));
   await app.register(songRoutes({ store, rt, webRemote, state, ws }));
   await app.register(debugRoutes(rt));
+  await app.register(rehearsalRoutes({ reaper, state, ws, config, store, prefs }));
+  await app.register(songsRoutes({ store }));
 
   app.get("/ws", { websocket: true }, (socket /* WebSocket */) => {
     ws.add(socket as any);
     // Send current state snapshot on connect so clients don't wait for the
     // next poll.
+    const rehearsalType =
+      config.rehearsalTypes.find((t) => t.id === state.currentRehearsalTypeId) ?? null;
     socket.send(JSON.stringify({
       type: "snapshot",
       data: {
         transport: state.transport,
         currentTake: state.currentTake,
         song: store.getSong(),
+        rehearsalSegments: state.rehearsalSegments,
+        rehearsalStatus: state.rehearsalStatus,
+        rehearsalType,
       },
     }));
   });

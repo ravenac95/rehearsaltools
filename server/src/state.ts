@@ -1,6 +1,8 @@
 // server/src/state.ts
 // In-memory cache of the latest state pushed by REAPER.
 
+import { randomUUID } from "node:crypto";
+
 export interface TransportState {
   playing: boolean;
   recording: boolean;
@@ -17,9 +19,27 @@ export interface Take {
   startTime: number;  // seconds
 }
 
+export interface RehearsalSegment {
+  id: string;
+  type: "take" | "discussion";
+  num: number;
+  songId: string;
+  songName: string;
+  startPosition: number;
+}
+
+export type RehearsalStatus = "idle" | "discussion" | "take" | "playback";
+
 export class AppState {
   transport: Partial<TransportState> = {};
   currentTake: Take | null = null;
+
+  rehearsalStatus: RehearsalStatus = "idle";
+  rehearsalSegments: RehearsalSegment[] = [];
+  /** Id of the currently-selected rehearsal type (seeded at boot). */
+  currentRehearsalTypeId: string | null = null;
+  private _discussionCount = 0;
+  private _takeCount = 0;
 
   /** Apply an incoming transport update (patch merge). */
   updateTransport(patch: Partial<TransportState>): TransportState {
@@ -29,6 +49,47 @@ export class AppState {
 
   setTake(take: Take | null): void {
     this.currentTake = take;
+  }
+
+  /** Start a new rehearsal — resets all counts and opens first discussion segment. */
+  startRehearsal(position: number, songId: string, songName: string): RehearsalSegment {
+    this.rehearsalSegments = [];
+    this._discussionCount = 0;
+    this._takeCount = 0;
+    return this.openSegment("discussion", position, songId, songName);
+  }
+
+  /** Open a new segment of the given type, push it, update status, return it. */
+  openSegment(type: "take" | "discussion", position: number, songId: string, songName: string): RehearsalSegment {
+    if (type === "take") {
+      this._takeCount += 1;
+    } else {
+      this._discussionCount += 1;
+    }
+    const seg: RehearsalSegment = {
+      id: randomUUID(),
+      type,
+      num: type === "take" ? this._takeCount : this._discussionCount,
+      songId,
+      songName,
+      startPosition: position,
+    };
+    this.rehearsalSegments.push(seg);
+    this.rehearsalStatus = type;
+    return seg;
+  }
+
+  /** End rehearsal — resets everything. */
+  endRehearsal(): void {
+    this.rehearsalSegments = [];
+    this._discussionCount = 0;
+    this._takeCount = 0;
+    this.rehearsalStatus = "idle";
+  }
+
+  /** Set status to playback. */
+  setPlayback(): void {
+    this.rehearsalStatus = "playback";
   }
 }
 

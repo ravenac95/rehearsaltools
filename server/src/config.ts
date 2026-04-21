@@ -1,6 +1,13 @@
 // server/src/config.ts
 // Centralised configuration. All values are environment-overridable.
 
+export interface RehearsalType {
+  id: string;
+  name: string;
+  desc: string;
+  emoji: string;
+}
+
 export interface Config {
   httpHost: string;
   httpPort: number;
@@ -23,6 +30,12 @@ export interface Config {
 
   // Persistent server store (sections + song form).
   dataFile: string;
+
+  // Persistent server preferences (e.g. last-selected rehearsal type).
+  prefsFile: string;
+
+  // Rehearsal type definitions
+  rehearsalTypes: RehearsalType[];
 }
 
 function intEnv(name: string, fallback: number): number {
@@ -54,5 +67,11 @@ export function loadConfig(): Config {
     reaperWebPort:       intEnv("REAPER_WEB_PORT",      8081),
 
     dataFile:            strEnv("DATA_FILE",            "./data/rehearsaltools.json"),
+    prefsFile:           strEnv("PREFS_FILE",           "./data/prefs.json"),
+
+    rehearsalTypes: [
+      { id: "full-band",  name: "Full Band",   desc: "All instruments, full monitoring",   emoji: "🎸" },
+      { id: "piano-vox",  name: "Piano + Vox", desc: "Stripped back, piano and vocals only", emoji: "🎹" },
+    ],
   };
 }
