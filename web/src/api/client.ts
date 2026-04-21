@@ -48,6 +48,33 @@ export interface TransportState {
 }
 export interface Take { startTime: number; }
 
+// ── Rehearsal types ──────────────────────────────────────────────────────────
+
+export interface RehearsalType {
+  id: string;
+  name: string;
+  desc: string;
+  emoji: string;
+}
+
+export interface RehearsalSegment {
+  id: string;
+  type: "take" | "discussion";
+  num: number;
+  songId: string;
+  songName: string;
+  startPosition: number;
+}
+
+export type RehearsalStatus = "idle" | "discussion" | "take" | "playback";
+
+export interface SongListItem {
+  id: string;
+  name: string;
+  bpm: number;
+  timeSig: string;
+}
+
 // ── HTTP helper ───────────────────────────────────────────────────────────────
 
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
@@ -119,14 +146,39 @@ export const api = {
   setLogEnabled: (enabled: boolean) =>
     req<{ enabled: boolean }>("/api/debug/logging",
       { method: "POST", body: JSON.stringify({ enabled }) }),
+
+  // Rehearsal
+  getRehearsalTypes: () => req<{ types: RehearsalType[] }>("/api/rehearsal/types"),
+  startRehearsal: (typeId: string) => req<{ ok: boolean; segment: RehearsalSegment }>(
+    "/api/rehearsal/start", { method: "POST", body: JSON.stringify({ typeId }) }),
+  setCategory: (category: "take" | "discussion") => req<{ ok: boolean; segment: RehearsalSegment }>(
+    "/api/rehearsal/set-category", { method: "POST", body: JSON.stringify({ category }) }),
+  endRehearsal: () => req("/api/rehearsal/end", { method: "POST", body: JSON.stringify({}) }),
+
+  // Songs
+  listSongs: () => req<{ songs: SongListItem[] }>("/api/songs"),
+  selectSong: (id: string) => req<{ ok: boolean; song: Song }>(
+    `/api/songs/${id}/select`, { method: "POST", body: JSON.stringify({}) }),
 };
 
 // ── WebSocket ─────────────────────────────────────────────────────────────────
 
 export type WsMessage =
-  | { type: "snapshot"; data: { transport: Partial<TransportState>; currentTake: Take | null; song: Song } }
+  | {
+      type: "snapshot";
+      data: {
+        transport: Partial<TransportState>;
+        currentTake: Take | null;
+        song: Song;
+        rehearsalSegments?: RehearsalSegment[];
+        rehearsalStatus?: RehearsalStatus;
+      };
+    }
   | { type: "transport"; data: TransportState }
   | { type: "songform:written"; data: { startTime: number; regionName?: string } }
+  | { type: "rehearsal:started"; data: { segment: RehearsalSegment } }
+  | { type: "rehearsal:segment"; data: { segment: RehearsalSegment } }
+  | { type: "rehearsal:ended"; data: Record<string, never> }
   | { type: string; data: unknown };
 
 export function connectWs(onMessage: (msg: WsMessage) => void): WebSocket {

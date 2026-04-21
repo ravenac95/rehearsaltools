@@ -4,6 +4,7 @@
 import { create } from "zustand";
 import type {
   Song, SongForm, TransportState, Region, Take, WsMessage, NoteValue, Stanza,
+  RehearsalType, RehearsalSegment, RehearsalStatus,
 } from "./api/client";
 import { api } from "./api/client";
 
@@ -19,6 +20,29 @@ export interface AppStore {
   loading: boolean;
   error: string | null;
   toast: string | null;  // transient warning toast
+
+  // Rehearsal state (server-authoritative, driven by WS)
+  rehearsalStatus: RehearsalStatus;
+  rehearsalTypes: RehearsalType[];
+  rehearsalType: RehearsalType | null;
+  takes: RehearsalSegment[];
+  currentSegmentStart: number | null;
+
+  // Playback
+  currentTakeIdx: number | null;  // index into takes[] for playback
+
+  // UI flags
+  songMode: "simple" | "complex";
+  playbackDrawerOpen: boolean;
+  songPickerOpen: boolean;
+  typePickerOpen: boolean;
+  menuOpen: boolean;
+
+  // Simple mode song values (independent of complex Song model)
+  simpleBpm: number;
+  simpleNote: NoteValue;
+  simpleNum: number;
+  simpleDenom: number;
 
   // Infrastructure
   refresh: () => Promise<void>;
@@ -37,6 +61,25 @@ export interface AppStore {
   upsertSection: (letter: string, stanzas: Stanza[], bpm?: number, note?: NoteValue) => Promise<void>;
   deleteSection: (letter: string) => Promise<void>;
   writeActiveForm: (regionName?: string) => Promise<void>;
+
+  // Rehearsal actions
+  fetchRehearsalTypes: () => Promise<void>;
+  setRehearsalType: (type: RehearsalType) => void;
+  startRehearsal: () => Promise<void>;
+  setCategory: (category: "take" | "discussion") => Promise<void>;
+  endRehearsal: () => Promise<void>;
+  stopPlayback: () => Promise<void>;
+  selectTakeForPlayback: (idx: number) => void;
+
+  // UI setters
+  setSongMode: (mode: "simple" | "complex") => void;
+  setPlaybackDrawerOpen: (open: boolean) => void;
+  setSongPickerOpen: (open: boolean) => void;
+  setTypePickerOpen: (open: boolean) => void;
+  setMenuOpen: (open: boolean) => void;
+  setSimpleBpm: (bpm: number) => void;
+  setSimpleNote: (note: NoteValue) => void;
+  setSimpleTimeSig: (num: number, denom: number) => void;
 }
 
 export const useStore = create<AppStore>((set, get) => ({
@@ -47,6 +90,27 @@ export const useStore = create<AppStore>((set, get) => ({
   loading: false,
   error: null,
   toast: null,
+
+  // Rehearsal initial state
+  rehearsalStatus: "idle",
+  rehearsalTypes: [],
+  rehearsalType: null,
+  takes: [],
+  currentSegmentStart: null,
+  currentTakeIdx: null,
+
+  // UI flags initial state
+  songMode: "simple",
+  playbackDrawerOpen: false,
+  songPickerOpen: false,
+  typePickerOpen: false,
+  menuOpen: false,
+
+  // Simple mode initial values
+  simpleBpm: 120,
+  simpleNote: "q",
+  simpleNum: 4,
+  simpleDenom: 4,
 
   refresh: async () => {
     set({ loading: true, error: null });
@@ -59,6 +123,10 @@ export const useStore = create<AppStore>((set, get) => ({
         regions: rg.regions,
         loading: false,
       });
+      // Fetch rehearsal types if not already loaded
+      if (get().rehearsalTypes.length === 0) {
+        await get().fetchRehearsalTypes();
+      }
     } catch (err: any) {
       set({ loading: false, error: String(err.message ?? err) });
     }
@@ -75,14 +143,48 @@ export const useStore = create<AppStore>((set, get) => ({
 
   applyWsMessage: (msg) => {
     if (msg.type === "snapshot") {
-      const d = msg.data as { transport?: Partial<TransportState>; currentTake: Take | null; song: Song };
-      set({ transport: d.transport ?? {}, currentTake: d.currentTake, song: d.song });
+      const d = msg.data as {
+        transport?: Partial<TransportState>;
+        currentTake: Take | null;
+        song: Song;
+        rehearsalSegments?: RehearsalSegment[];
+        rehearsalStatus?: RehearsalStatus;
+      };
+      const update: Partial<AppStore> = {
+        transport: d.transport ?? {},
+        currentTake: d.currentTake,
+        song: d.song,
+      };
+      if (d.rehearsalSegments !== undefined) update.takes = d.rehearsalSegments;
+      if (d.rehearsalStatus !== undefined) update.rehearsalStatus = d.rehearsalStatus;
+      set(update);
     } else if (msg.type === "transport") {
       set({ transport: msg.data as TransportState });
     } else if (msg.type === "songform:written") {
       const d = msg.data as { startTime: number };
       set({ currentTake: { startTime: d.startTime } });
       get().refreshRegions();
+    } else if (msg.type === "rehearsal:started") {
+      const { segment } = (msg as { type: "rehearsal:started"; data: { segment: RehearsalSegment } }).data;
+      set((s) => ({
+        takes: [...s.takes, segment],
+        rehearsalStatus: "discussion",
+        currentSegmentStart: segment.startPosition,
+      }));
+    } else if (msg.type === "rehearsal:segment") {
+      const { segment } = (msg as { type: "rehearsal:segment"; data: { segment: RehearsalSegment } }).data;
+      set((s) => ({
+        takes: [...s.takes, segment],
+        rehearsalStatus: segment.type,
+        currentSegmentStart: segment.startPosition,
+      }));
+    } else if (msg.type === "rehearsal:ended") {
+      set({
+        takes: [],
+        rehearsalStatus: "idle",
+        currentSegmentStart: null,
+        currentTakeIdx: null,
+      });
     }
   },
 
@@ -136,4 +238,52 @@ export const useStore = create<AppStore>((set, get) => ({
     await api.writeActiveForm(song.activeFormId, regionName);
     await get().refreshRegions();
   },
+
+  // ── Rehearsal actions ────────────────────────────────────────────────────
+
+  fetchRehearsalTypes: async () => {
+    try {
+      const { types } = await api.getRehearsalTypes();
+      set({ rehearsalTypes: types });
+    } catch (err: any) {
+      // Non-fatal — types may load later
+      console.warn("fetchRehearsalTypes failed:", err.message ?? err);
+    }
+  },
+
+  setRehearsalType: (type) => set({ rehearsalType: type }),
+
+  startRehearsal: async () => {
+    const { rehearsalType } = get();
+    if (!rehearsalType) throw new Error("no rehearsal type selected");
+    await api.startRehearsal(rehearsalType.id);
+  },
+
+  setCategory: async (category) => {
+    await api.setCategory(category);
+  },
+
+  endRehearsal: async () => {
+    await api.endRehearsal();
+  },
+
+  stopPlayback: async () => {
+    await api.stop();
+    set({ rehearsalStatus: "discussion" });
+  },
+
+  selectTakeForPlayback: (idx) => {
+    set({ currentTakeIdx: idx, rehearsalStatus: "playback" });
+  },
+
+  // ── UI setters ───────────────────────────────────────────────────────────
+
+  setSongMode: (mode) => set({ songMode: mode }),
+  setPlaybackDrawerOpen: (open) => set({ playbackDrawerOpen: open }),
+  setSongPickerOpen: (open) => set({ songPickerOpen: open }),
+  setTypePickerOpen: (open) => set({ typePickerOpen: open }),
+  setMenuOpen: (open) => set({ menuOpen: open }),
+  setSimpleBpm: (bpm) => set({ simpleBpm: bpm }),
+  setSimpleNote: (note) => set({ simpleNote: note }),
+  setSimpleTimeSig: (num, denom) => set({ simpleNum: num, simpleDenom: denom }),
 }));
