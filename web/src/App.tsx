@@ -50,6 +50,7 @@ export function App() {
         <div style={{ padding: "12px 16px 0" }}>
           <input
             type="text"
+            className="song-name-input"
             value={nameDraft}
             style={{
               fontFamily: "var(--font-display)",
@@ -57,7 +58,6 @@ export function App() {
               fontWeight: 700,
               background: "transparent",
               border: "none",
-              borderBottom: nameFocusedRef.current ? "2px solid var(--accent)" : "2px solid transparent",
               borderRadius: 0,
               padding: "4px 0",
               width: "100%",

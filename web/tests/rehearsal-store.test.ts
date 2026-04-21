@@ -59,6 +59,18 @@ describe("WS message: rehearsal:started", () => {
     expect(state.rehearsalStatus).toBe("discussion");
     expect(state.currentSegmentStart).toBe(42);
   });
+
+  it("replaces any existing takes (server resets the segment log on start)", () => {
+    useStore.setState({
+      takes: [makeSegment({ id: "stale-1" }), makeSegment({ id: "stale-2" })],
+      currentTakeIdx: 1,
+    } as any);
+    const seg = makeSegment({ id: "fresh", startPosition: 0 });
+    useStore.getState().applyWsMessage({ type: "rehearsal:started", data: { segment: seg } });
+    const state = useStore.getState();
+    expect(state.takes).toEqual([seg]);
+    expect(state.currentTakeIdx).toBeNull();
+  });
 });
 
 describe("WS message: rehearsal:segment with type take", () => {
@@ -106,6 +118,39 @@ describe("WS message: snapshot with rehearsalSegments", () => {
     });
     expect(useStore.getState().takes).toHaveLength(2);
     expect(useStore.getState().rehearsalStatus).toBe("discussion");
+  });
+
+  it("derives currentSegmentStart from the last segment when active", () => {
+    const segs = [
+      makeSegment({ id: "s1", startPosition: 0 }),
+      makeSegment({ id: "s2", type: "take", startPosition: 17 }),
+    ];
+    useStore.getState().applyWsMessage({
+      type: "snapshot",
+      data: {
+        transport: {},
+        currentTake: null,
+        song: { id: "song-1", name: "Song", sections: [], songForms: [], activeFormId: null },
+        rehearsalSegments: segs,
+        rehearsalStatus: "take",
+      } as any,
+    });
+    expect(useStore.getState().currentSegmentStart).toBe(17);
+  });
+
+  it("clears currentSegmentStart when snapshot status is idle", () => {
+    useStore.setState({ currentSegmentStart: 99 } as any);
+    useStore.getState().applyWsMessage({
+      type: "snapshot",
+      data: {
+        transport: {},
+        currentTake: null,
+        song: { id: "song-1", name: "Song", sections: [], songForms: [], activeFormId: null },
+        rehearsalSegments: [],
+        rehearsalStatus: "idle",
+      } as any,
+    });
+    expect(useStore.getState().currentSegmentStart).toBeNull();
   });
 });
 

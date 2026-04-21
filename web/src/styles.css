@@ -345,3 +345,13 @@ input[type="range"].wf-slider::-moz-range-thumb {
   border: 2px solid var(--surface);
   cursor: pointer;
 }
+
+/* Song name input: focus underline driven by :focus (no re-render needed). */
+.song-name-input {
+  border-bottom: 2px solid transparent;
+  transition: border-color 0.15s ease;
+}
+.song-name-input:focus {
+  outline: none;
+  border-bottom-color: var(--accent);
+}

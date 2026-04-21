@@ -2,10 +2,14 @@
 // Smoke test: verify the new CSS token system is present in styles.css
 
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "fs";
-import { resolve } from "path";
+import { readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const cssPath = resolve(__dirname, "../src/styles.css");
+// Build the path indirectly so Vite doesn't rewrite `new URL(..., import.meta.url)`
+// as a dev-server asset URL.
+const here = dirname(fileURLToPath(import.meta.url));
+const cssPath = resolve(here, "../src/styles.css");
 const css = readFileSync(cssPath, "utf8");
 
 describe("CSS token smoke tests", () => {

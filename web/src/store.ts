@@ -155,7 +155,13 @@ export const useStore = create<AppStore>((set, get) => ({
         currentTake: d.currentTake,
         song: d.song,
       };
-      if (d.rehearsalSegments !== undefined) update.takes = d.rehearsalSegments;
+      if (d.rehearsalSegments !== undefined) {
+        update.takes = d.rehearsalSegments;
+        const status = d.rehearsalStatus ?? "idle";
+        const isActive = status === "discussion" || status === "take";
+        const last = d.rehearsalSegments[d.rehearsalSegments.length - 1];
+        update.currentSegmentStart = isActive && last ? last.startPosition : null;
+      }
       if (d.rehearsalStatus !== undefined) update.rehearsalStatus = d.rehearsalStatus;
       set(update);
     } else if (msg.type === "transport") {
@@ -166,11 +172,12 @@ export const useStore = create<AppStore>((set, get) => ({
       get().refreshRegions();
     } else if (msg.type === "rehearsal:started") {
       const { segment } = (msg as { type: "rehearsal:started"; data: { segment: RehearsalSegment } }).data;
-      set((s) => ({
-        takes: [...s.takes, segment],
+      set({
+        takes: [segment],
         rehearsalStatus: "discussion",
         currentSegmentStart: segment.startPosition,
-      }));
+        currentTakeIdx: null,
+      });
     } else if (msg.type === "rehearsal:segment") {
       const { segment } = (msg as { type: "rehearsal:segment"; data: { segment: RehearsalSegment } }).data;
       set((s) => ({
