@@ -1,24 +1,31 @@
-/* Mobile-first rehearsal UI — hand-drawn wireframe theme */
+/* Mobile-first rehearsal UI — DM Sans / Caveat design system */
 
-/* ── Shared / root variables ─────────────────────────────────────────────── */
+/* ── Google Fonts ─────────────────────────────────────────────────────────── */
+
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=DM+Mono:wght@400;500&family=Caveat:wght@700&display=swap');
+
+/* ── Root variables ──────────────────────────────────────────────────────── */
 
 :root {
-  --font-hand:   'Kalam', 'Comic Sans MS', cursive;
-  --font-marker: 'Caveat', 'Comic Sans MS', cursive;
-  --font-mono:   'JetBrains Mono', 'Courier New', monospace;
-  --font-music:  'Noto Music', 'Bravura Text', serif;
+  --font-body:    'DM Sans', system-ui, sans-serif;
+  --font-display: 'Caveat', cursive;
+  --font-mono:    'DM Mono', 'JetBrains Mono', 'Courier New', monospace;
+  --font-music:   'Noto Music', 'Bravura Text', serif;
 
   --radius-sm:   8px;
   --radius-md:   12px;
-  --radius-lg:   20px;
+  --radius-lg:   16px;
   --radius-pill: 999px;
 
+  --shadow-sm:   0 1px 3px rgba(0,0,0,0.06);
+  --shadow-md:   0 2px 8px rgba(0,0,0,0.08);
   --shadow-sketch: 2px 3px 0 rgba(0,0,0,0.12);
   --shadow-card:   3px 4px 0 rgba(0,0,0,0.10);
-  --spacing-xs:    4px;
-  --spacing-sm:    8px;
-  --spacing-md:    16px;
-  --spacing-lg:    24px;
+
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
 }
 
 /* ── Light theme (paper palette) ─────────────────────────────────────────── */
@@ -30,10 +37,16 @@
   --ink:         #1e1b16;
   --ink-soft:    #3a3630;
   --muted-color: #807a70;
+  --muted:       #8a8478;
   --faint:       #b8b2a5;
   --rule:        #cfc8b8;
   --accent:      #c73a1d;
   --accent-soft: rgba(199,58,29,0.12);
+
+  --green:      #2d8a4e;
+  --green-soft: rgba(45,138,78,0.10);
+  --amber:      #b8860b;
+  --amber-soft: rgba(184,134,11,0.10);
 
   /* Letter swatches — light-mode ink is dark */
   --letter-A-bg: #ff8a6b; --letter-A-ink: #5a1a00;
@@ -73,10 +86,16 @@
   --ink:         #f3ece0;
   --ink-soft:    #d9d0bf;
   --muted-color: #948c7e;
+  --muted:       #948c7e;
   --faint:       #5a534a;
   --rule:        #3a3630;
   --accent:      #f08a4a;
   --accent-soft: rgba(240,138,74,0.15);
+
+  --green:      #4ac46a;
+  --green-soft: rgba(74,196,106,0.12);
+  --amber:      #d4a017;
+  --amber-soft: rgba(212,160,23,0.12);
 
   /* Letter swatches — dark-mode ink is lighter */
   --letter-A-bg: #8b3a20; --letter-A-ink: #ffe0d0;
@@ -115,9 +134,10 @@ html, body, #root {
   margin: 0; padding: 0;
   width: 100%;
   min-height: 100vh;
+  min-height: 100dvh;
   background: var(--surface);
   color: var(--ink);
-  font-family: var(--font-hand);
+  font-family: var(--font-body);
   -webkit-tap-highlight-color: transparent;
   -webkit-user-select: none;
   user-select: none;
@@ -129,61 +149,7 @@ body { font-size: 17px; line-height: 1.35; }
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-}
-
-/* ── App header ──────────────────────────────────────────────────────────── */
-
-.app-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px var(--spacing-md);
-  background: var(--surface-alt);
-  border-bottom: 1px solid var(--rule);
-}
-.app-header__title {
-  font-family: var(--font-marker);
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--ink);
-}
-
-/* ── Tabs ────────────────────────────────────────────────────────────────── */
-
-.tabs {
-  display: flex;
-  background: var(--surface-alt);
-  border-bottom: 1px solid var(--rule);
-  overflow-x: auto;
-  flex-shrink: 0;
-  position: sticky;
-  top: 0;
-  z-index: 10;
-}
-
-.tabs button {
-  flex: 1 0 auto;
-  padding: 14px 18px;
-  background: transparent;
-  color: var(--muted-color);
-  border: none;
-  border-bottom: 3px solid transparent;
-  font: inherit;
-  font-weight: 500;
-  cursor: pointer;
-  min-height: 48px;
-  white-space: nowrap;
-}
-.tabs button.active {
-  color: var(--ink);
-  border-bottom-color: var(--accent);
-}
-
-/* ── Screen ──────────────────────────────────────────────────────────────── */
-
-.screen {
-  padding: 16px;
-  flex: 1;
+  min-height: 100dvh;
 }
 
 h2 { margin-top: 0; font-size: 20px; }
@@ -197,6 +163,7 @@ button.primary, button.secondary, button.danger {
   border-radius: var(--radius-md);
   border: none;
   font: inherit;
+  font-family: var(--font-body);
   font-weight: 600;
   cursor: pointer;
   touch-action: manipulation;
@@ -206,16 +173,6 @@ button.primary.record { background: #923; color: #fff; }
 button.secondary  { background: var(--surface-alt); color: var(--ink); border: 1px solid var(--rule); }
 button.danger     { background: #923; color: #fff; }
 button:disabled   { opacity: 0.45; cursor: not-allowed; }
-
-/* ── Transport grid ──────────────────────────────────────────────────────── */
-
-.transport {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  margin-top: 16px;
-}
-.transport button { width: 100%; }
 
 /* ── Row / stack ─────────────────────────────────────────────────────────── */
 
@@ -239,7 +196,7 @@ input[type="text"], input[type="number"] {
   border: 1px solid var(--rule);
   background: var(--surface);
   color: var(--ink);
-  font-family: var(--font-hand);
+  font-family: var(--font-body);
   font-size: inherit;
   min-height: 48px;
   width: 100%;
@@ -276,7 +233,7 @@ select {
   margin: 4px;
   font-weight: 600;
   font-size: 16px;
-  font-family: var(--font-hand);
+  font-family: var(--font-body);
   cursor: pointer;
   min-height: 44px;
   touch-action: manipulation;
@@ -288,30 +245,6 @@ select {
   color: var(--faint);
 }
 .chip.empty { color: var(--faint); }
-
-/* ── Status bar ──────────────────────────────────────────────────────────── */
-
-.status-bar {
-  background: var(--surface-alt);
-  border-top: 1px solid var(--rule);
-  padding: 10px 14px;
-  font-size: 13px;
-  color: var(--muted-color);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.status-bar .dot {
-  display: inline-block;
-  width: 10px; height: 10px;
-  border-radius: 50%;
-  margin-right: 6px;
-  background: var(--faint);
-  vertical-align: middle;
-}
-.status-bar .dot.playing   { background: #4c6; }
-.status-bar .dot.recording { background: var(--accent); }
-.status-bar .dot.stopped   { background: var(--faint); }
 
 /* ── Table ───────────────────────────────────────────────────────────────── */
 
@@ -335,7 +268,7 @@ th { color: var(--muted-color); font-weight: 500; font-size: 13px; }
   border: 1px solid var(--rule);
   border-radius: var(--radius-pill);
   box-shadow: var(--shadow-card);
-  font-family: var(--font-hand);
+  font-family: var(--font-body);
   font-size: 14px;
   z-index: 100;
   max-width: calc(100vw - 32px);
@@ -372,6 +305,13 @@ th { color: var(--muted-color); font-weight: 500; font-size: 13px; }
   width: 2px;
   background: var(--ink);
   animation: wf-caret-blink 1s step-end infinite;
+}
+
+/* ── Pulse animation (used by StatusBadge) ──────────────────────────────── */
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
 }
 
 /* ── BPM slider (native range styled to match WF2) ──────────────────────── */
