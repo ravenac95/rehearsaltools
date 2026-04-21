@@ -22,6 +22,8 @@ import regionsRoutes   from "./routes/regions.js";
 import mixdownRoutes   from "./routes/mixdown.js";
 import songRoutes      from "./routes/song.js";
 import debugRoutes     from "./routes/debug.js";
+import rehearsalRoutes from "./routes/rehearsal.js";
+import songsRoutes     from "./routes/songs.js";
 
 async function main() {
   const config = loadConfig();
@@ -70,6 +72,8 @@ async function main() {
   await app.register(mixdownRoutes(rt));
   await app.register(songRoutes({ store, rt, webRemote, state, ws }));
   await app.register(debugRoutes(rt));
+  await app.register(rehearsalRoutes({ reaper, state, ws, config, store }));
+  await app.register(songsRoutes({ store }));
 
   app.get("/ws", { websocket: true }, (socket /* WebSocket */) => {
     ws.add(socket as any);
@@ -81,6 +85,8 @@ async function main() {
         transport: state.transport,
         currentTake: state.currentTake,
         song: store.getSong(),
+        rehearsalSegments: state.rehearsalSegments,
+        rehearsalStatus: state.rehearsalStatus,
       },
     }));
   });
