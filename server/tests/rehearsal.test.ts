@@ -9,6 +9,7 @@ import type { Config } from "../src/config.js";
 import type { SongStore } from "../src/store/song.js";
 import type { ReaperNativeClient } from "../src/osc/client.js";
 import type { WsHub } from "../src/ws.js";
+import type { PrefsStore } from "../src/store/prefs.js";
 
 // ── AppState unit tests ────────────────────────────────────────────────────
 
@@ -109,6 +110,12 @@ function makeMockDeps() {
     getSong: vi.fn().mockReturnValue(mockSong),
   } as unknown as SongStore;
 
+  const prefs = {
+    load: vi.fn().mockResolvedValue(undefined),
+    getRehearsalTypeId: vi.fn().mockReturnValue(null),
+    setRehearsalTypeId: vi.fn().mockResolvedValue(undefined),
+  } as unknown as PrefsStore;
+
   const config: Config = {
     httpHost: "localhost",
     httpPort: 8080,
@@ -119,13 +126,17 @@ function makeMockDeps() {
     reaperWebHost: "127.0.0.1",
     reaperWebPort: 8081,
     dataFile: "./data/test.json",
+    prefsFile: "./data/test-prefs.json",
     rehearsalTypes: [
       { id: "full-band", name: "Full Band", desc: "All instruments", emoji: "🎸" },
       { id: "piano-vox", name: "Piano + Vox", desc: "Stripped back", emoji: "🎹" },
     ],
   };
 
-  return { state, reaper, ws, store, config };
+  // Default: state has a current type seeded (matches post-boot invariant)
+  state.currentRehearsalTypeId = "full-band";
+
+  return { state, reaper, ws, store, prefs, config };
 }
 
 async function buildApp() {
@@ -152,12 +163,12 @@ describe("GET /api/rehearsal/types", () => {
 });
 
 describe("POST /api/rehearsal/start", () => {
-  it("returns 200 with discussion segment for valid typeId", async () => {
+  it("returns 200 with discussion segment when no typeId body is provided (uses current)", async () => {
     const { app, state } = await buildApp();
     const res = await app.inject({
       method: "POST",
       url: "/api/rehearsal/start",
-      payload: { typeId: "full-band" },
+      payload: {},
     });
     expect(res.statusCode).toBe(200);
     const body = res.json();
@@ -166,14 +177,15 @@ describe("POST /api/rehearsal/start", () => {
     expect(state.rehearsalStatus).toBe("discussion");
   });
 
-  it("returns 400 for invalid typeId", async () => {
-    const { app } = await buildApp();
+  it("returns 409 when no current type is set on the server", async () => {
+    const { app, state } = await buildApp();
+    state.currentRehearsalTypeId = null;
     const res = await app.inject({
       method: "POST",
       url: "/api/rehearsal/start",
-      payload: { typeId: "nonexistent" },
+      payload: {},
     });
-    expect(res.statusCode).toBe(400);
+    expect(res.statusCode).toBe(409);
   });
 
   it("returns 409 when rehearsal already in progress", async () => {
@@ -182,11 +194,56 @@ describe("POST /api/rehearsal/start", () => {
     const res = await app.inject({
       method: "POST",
       url: "/api/rehearsal/start",
-      payload: { typeId: "full-band" },
+      payload: {},
     });
     expect(res.statusCode).toBe(409);
     const body = res.json();
     expect(body.error).toMatch(/already in progress/);
+  });
+});
+
+describe("POST /api/rehearsal/type", () => {
+  it("returns 200 and updates current type when body id is valid", async () => {
+    const { app, state, prefs, ws } = await buildApp();
+    const res = await app.inject({
+      method: "POST",
+      url: "/api/rehearsal/type",
+      payload: { typeId: "piano-vox" },
+    });
+    expect(res.statusCode).toBe(200);
+    const body = res.json();
+    expect(body.ok).toBe(true);
+    expect(body.type.id).toBe("piano-vox");
+    expect(state.currentRehearsalTypeId).toBe("piano-vox");
+    expect(prefs.setRehearsalTypeId).toHaveBeenCalledWith("piano-vox");
+    expect(ws.broadcast).toHaveBeenCalledWith(expect.objectContaining({
+      type: "rehearsal:type-changed",
+      data: { type: expect.objectContaining({ id: "piano-vox" }) },
+    }));
+  });
+
+  it("returns 400 for an unknown typeId", async () => {
+    const { app, state, prefs, ws } = await buildApp();
+    const before = state.currentRehearsalTypeId;
+    const res = await app.inject({
+      method: "POST",
+      url: "/api/rehearsal/type",
+      payload: { typeId: "does-not-exist" },
+    });
+    expect(res.statusCode).toBe(400);
+    expect(state.currentRehearsalTypeId).toBe(before);
+    expect(prefs.setRehearsalTypeId).not.toHaveBeenCalled();
+    expect(ws.broadcast).not.toHaveBeenCalled();
+  });
+
+  it("returns 400 when body is missing typeId", async () => {
+    const { app } = await buildApp();
+    const res = await app.inject({
+      method: "POST",
+      url: "/api/rehearsal/type",
+      payload: {},
+    });
+    expect(res.statusCode).toBe(400);
   });
 });
 

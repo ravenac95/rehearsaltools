@@ -42,7 +42,7 @@ export function RehearsalHeader() {
           whiteSpace: "nowrap",
         }}
       >
-        {rehearsalType?.emoji ?? "🎸"} {rehearsalType?.name ?? "Full Band"} ▾
+        {rehearsalType ? `${rehearsalType.emoji} ${rehearsalType.name}` : "—"} ▾
       </button>
 
       {/* Status badge */}

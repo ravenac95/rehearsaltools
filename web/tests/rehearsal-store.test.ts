@@ -3,7 +3,7 @@
 
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { useStore } from "../src/store";
-import type { RehearsalSegment } from "../src/api/client";
+import type { RehearsalSegment, RehearsalType } from "../src/api/client";
 
 const makeSegment = (overrides: Partial<RehearsalSegment> = {}): RehearsalSegment => ({
   id: "seg-1",
@@ -151,6 +151,89 @@ describe("WS message: snapshot with rehearsalSegments", () => {
       } as any,
     });
     expect(useStore.getState().currentSegmentStart).toBeNull();
+  });
+});
+
+describe("WS message: snapshot with rehearsalType", () => {
+  it("hydrates rehearsalType when present in snapshot", () => {
+    const fullBand: RehearsalType = { id: "full-band", name: "Full Band", desc: "All", emoji: "🎸" };
+    useStore.getState().applyWsMessage({
+      type: "snapshot",
+      data: {
+        transport: {},
+        currentTake: null,
+        song: { id: "s1", name: "Song", sections: [], songForms: [], activeFormId: null },
+        rehearsalType: fullBand,
+      } as any,
+    });
+    expect(useStore.getState().rehearsalType).toEqual(fullBand);
+  });
+
+  it("leaves rehearsalType untouched when snapshot omits it", () => {
+    const pianoVox: RehearsalType = { id: "piano-vox", name: "Piano + Vox", desc: "Quiet", emoji: "🎹" };
+    useStore.setState({ rehearsalType: pianoVox } as any);
+    useStore.getState().applyWsMessage({
+      type: "snapshot",
+      data: {
+        transport: {},
+        currentTake: null,
+        song: { id: "s1", name: "Song", sections: [], songForms: [], activeFormId: null },
+      } as any,
+    });
+    expect(useStore.getState().rehearsalType).toEqual(pianoVox);
+  });
+});
+
+describe("WS message: rehearsal:type-changed", () => {
+  it("sets rehearsalType to the broadcast type", () => {
+    const pianoVox: RehearsalType = { id: "piano-vox", name: "Piano + Vox", desc: "Quiet", emoji: "🎹" };
+    useStore.getState().applyWsMessage({
+      type: "rehearsal:type-changed",
+      data: { type: pianoVox },
+    } as any);
+    expect(useStore.getState().rehearsalType).toEqual(pianoVox);
+  });
+});
+
+describe("setRehearsalType action", () => {
+  it("optimistically updates local state and calls api.setRehearsalType", async () => {
+    const fullBand: RehearsalType = { id: "full-band", name: "Full Band", desc: "All", emoji: "🎸" };
+    const { api } = await import("../src/api/client");
+    const spy = vi.spyOn(api, "setRehearsalType").mockResolvedValueOnce({ ok: true, type: fullBand } as any);
+
+    await useStore.getState().setRehearsalType(fullBand);
+
+    expect(useStore.getState().rehearsalType).toEqual(fullBand);
+    expect(spy).toHaveBeenCalledWith("full-band");
+    spy.mockRestore();
+  });
+
+  it("surfaces error on the store when the server call fails", async () => {
+    const fullBand: RehearsalType = { id: "full-band", name: "Full Band", desc: "All", emoji: "🎸" };
+    const { api } = await import("../src/api/client");
+    const spy = vi.spyOn(api, "setRehearsalType").mockRejectedValueOnce(new Error("boom"));
+
+    await useStore.getState().setRehearsalType(fullBand);
+
+    expect(useStore.getState().error).toMatch(/boom/);
+    spy.mockRestore();
+    useStore.setState({ error: null } as any);
+  });
+});
+
+describe("startRehearsal action", () => {
+  it("succeeds without first calling setRehearsalType (server holds current type)", async () => {
+    const { api } = await import("../src/api/client");
+    const spy = vi.spyOn(api, "startRehearsal").mockResolvedValueOnce({ ok: true, segment: makeSegment() } as any);
+
+    // No rehearsalType set locally
+    expect(useStore.getState().rehearsalType).toBeNull();
+
+    await useStore.getState().startRehearsal();
+    expect(spy).toHaveBeenCalledTimes(1);
+    // Called with no args — server uses its own currentRehearsalTypeId.
+    expect(spy).toHaveBeenCalledWith();
+    spy.mockRestore();
   });
 });
 

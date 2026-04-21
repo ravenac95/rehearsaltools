@@ -36,6 +36,8 @@ export class AppState {
 
   rehearsalStatus: RehearsalStatus = "idle";
   rehearsalSegments: RehearsalSegment[] = [];
+  /** Id of the currently-selected rehearsal type (seeded at boot). */
+  currentRehearsalTypeId: string | null = null;
   private _discussionCount = 0;
   private _takeCount = 0;
 

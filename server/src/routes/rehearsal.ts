@@ -1,5 +1,5 @@
 // server/src/routes/rehearsal.ts
-// Rehearsal lifecycle endpoints: start, set-category, end, types.
+// Rehearsal lifecycle endpoints: start, set-category, end, types, select type.
 
 import type { FastifyInstance } from "fastify";
 import type { ReaperNativeClient } from "../osc/client.js";
@@ -7,6 +7,7 @@ import type { AppState } from "../state.js";
 import type { WsHub } from "../ws.js";
 import type { Config } from "../config.js";
 import type { SongStore } from "../store/song.js";
+import type { PrefsStore } from "../store/prefs.js";
 
 interface Deps {
   reaper: ReaperNativeClient;
@@ -14,25 +15,45 @@ interface Deps {
   ws: WsHub;
   config: Config;
   store: SongStore;
+  prefs: PrefsStore;
 }
 
 export default function rehearsalRoutes(deps: Deps) {
   return async function (app: FastifyInstance) {
-    const { reaper, state, ws, config, store } = deps;
+    const { reaper, state, ws, config, store, prefs } = deps;
 
     /** GET /api/rehearsal/types — return available rehearsal types from config */
     app.get("/api/rehearsal/types", async () => {
       return { ok: true, types: config.rehearsalTypes };
     });
 
-    /** POST /api/rehearsal/start — start recording, open first discussion segment */
-    app.post<{ Body: { typeId: string } }>(
-      "/api/rehearsal/start",
+    /** POST /api/rehearsal/type — set the currently-selected rehearsal type */
+    app.post<{ Body: { typeId?: string } }>(
+      "/api/rehearsal/type",
       async (req, reply) => {
-        const { typeId } = req.body ?? ({} as any);
+        const { typeId } = req.body ?? ({} as { typeId?: string });
+        if (typeof typeId !== "string") {
+          return reply.code(400).send({ ok: false, error: "typeId is required" });
+        }
         const typeObj = config.rehearsalTypes.find((t) => t.id === typeId);
         if (!typeObj) {
           return reply.code(400).send({ ok: false, error: `unknown typeId: ${typeId}` });
+        }
+
+        state.currentRehearsalTypeId = typeId;
+        await prefs.setRehearsalTypeId(typeId);
+        ws.broadcast({ type: "rehearsal:type-changed", data: { type: typeObj } });
+        return { ok: true, type: typeObj };
+      },
+    );
+
+    /** POST /api/rehearsal/start — start recording, open first discussion segment */
+    app.post(
+      "/api/rehearsal/start",
+      async (_req, reply) => {
+        const typeId = state.currentRehearsalTypeId;
+        if (!typeId) {
+          return reply.code(409).send({ ok: false, error: "no rehearsal type selected" });
         }
         if (state.rehearsalStatus !== "idle") {
           return reply.code(409).send({ ok: false, error: "rehearsal already in progress" });

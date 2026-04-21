@@ -149,8 +149,10 @@ export const api = {
 
   // Rehearsal
   getRehearsalTypes: () => req<{ types: RehearsalType[] }>("/api/rehearsal/types"),
-  startRehearsal: (typeId: string) => req<{ ok: boolean; segment: RehearsalSegment }>(
-    "/api/rehearsal/start", { method: "POST", body: JSON.stringify({ typeId }) }),
+  setRehearsalType: (typeId: string) => req<{ ok: boolean; type: RehearsalType }>(
+    "/api/rehearsal/type", { method: "POST", body: JSON.stringify({ typeId }) }),
+  startRehearsal: () => req<{ ok: boolean; segment: RehearsalSegment }>(
+    "/api/rehearsal/start", { method: "POST", body: JSON.stringify({}) }),
   setCategory: (category: "take" | "discussion") => req<{ ok: boolean; segment: RehearsalSegment }>(
     "/api/rehearsal/set-category", { method: "POST", body: JSON.stringify({ category }) }),
   endRehearsal: () => req("/api/rehearsal/end", { method: "POST", body: JSON.stringify({}) }),
@@ -172,6 +174,7 @@ export type WsMessage =
         song: Song;
         rehearsalSegments?: RehearsalSegment[];
         rehearsalStatus?: RehearsalStatus;
+        rehearsalType?: RehearsalType | null;
       };
     }
   | { type: "transport"; data: TransportState }
@@ -179,6 +182,7 @@ export type WsMessage =
   | { type: "rehearsal:started"; data: { segment: RehearsalSegment } }
   | { type: "rehearsal:segment"; data: { segment: RehearsalSegment } }
   | { type: "rehearsal:ended"; data: Record<string, never> }
+  | { type: "rehearsal:type-changed"; data: { type: RehearsalType } }
   | { type: string; data: unknown };
 
 export function connectWs(onMessage: (msg: WsMessage) => void): WebSocket {

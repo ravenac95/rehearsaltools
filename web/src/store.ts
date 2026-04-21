@@ -64,7 +64,7 @@ export interface AppStore {
 
   // Rehearsal actions
   fetchRehearsalTypes: () => Promise<void>;
-  setRehearsalType: (type: RehearsalType) => void;
+  setRehearsalType: (type: RehearsalType) => Promise<void>;
   startRehearsal: () => Promise<void>;
   setCategory: (category: "take" | "discussion") => Promise<void>;
   endRehearsal: () => Promise<void>;
@@ -149,6 +149,7 @@ export const useStore = create<AppStore>((set, get) => ({
         song: Song;
         rehearsalSegments?: RehearsalSegment[];
         rehearsalStatus?: RehearsalStatus;
+        rehearsalType?: RehearsalType | null;
       };
       const update: Partial<AppStore> = {
         transport: d.transport ?? {},
@@ -163,7 +164,11 @@ export const useStore = create<AppStore>((set, get) => ({
         update.currentSegmentStart = isActive && last ? last.startPosition : null;
       }
       if (d.rehearsalStatus !== undefined) update.rehearsalStatus = d.rehearsalStatus;
+      if (d.rehearsalType !== undefined) update.rehearsalType = d.rehearsalType;
       set(update);
+    } else if (msg.type === "rehearsal:type-changed") {
+      const { type } = (msg as { type: "rehearsal:type-changed"; data: { type: RehearsalType } }).data;
+      set({ rehearsalType: type });
     } else if (msg.type === "transport") {
       set({ transport: msg.data as TransportState });
     } else if (msg.type === "songform:written") {
@@ -258,12 +263,19 @@ export const useStore = create<AppStore>((set, get) => ({
     }
   },
 
-  setRehearsalType: (type) => set({ rehearsalType: type }),
+  setRehearsalType: async (type) => {
+    // Optimistic local update keeps the picker snappy; WS broadcast will
+    // confirm or overwrite.
+    set({ rehearsalType: type });
+    try {
+      await api.setRehearsalType(type.id);
+    } catch (err: any) {
+      set({ error: String(err.message ?? err) });
+    }
+  },
 
   startRehearsal: async () => {
-    const { rehearsalType } = get();
-    if (!rehearsalType) throw new Error("no rehearsal type selected");
-    await api.startRehearsal(rehearsalType.id);
+    await api.startRehearsal();
   },
 
   setCategory: async (category) => {
