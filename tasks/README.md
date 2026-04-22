@@ -1,54 +1,20 @@
-# Rehearsal Flow Redesign — Task Queue
+# Task Plan: Sync Storybook with the rehearsal redesign
 
-These files are prompts for AI agent execution. Delete each file after its task is completed. When all files are deleted, the feature is complete.
+Source of truth: `/root/.claude/plans/the-previous-commit-did-proud-oasis.md`.
 
-## Summary
+Each task refactors a single rehearsal component into a `<Name>Presentation.tsx` (pure) + container pattern and adds a co-located `<Name>Presentation.stories.tsx`.
 
-Redesign of the RehearsalTools SPA from a four-tab layout (Transport/Song/Regions/Mixdown) to a single-screen, rehearsal-centric app with a linear rehearsal flow (start → take/discussion → end), a slide-up playback drawer, and a hamburger menu. New server endpoints manage rehearsal segment lifecycle. CSS design tokens are updated.
+Tasks 01–09 touch disjoint files and can run in any order. They all share the `web/src/components/rehearsal/` directory. Since the orchestrator runs sequentially, execute them in numeric order.
 
-## Task List (in execution order)
+## Conventions (apply to every task)
 
-| File | Title | Wave | Parallelism |
-|------|-------|------|-------------|
-| `001-server-rehearsal-state.md` | Server rehearsal endpoints + AppState | 1 | parallel with 002, 004 |
-| `002-server-songs-endpoint.md` | Server songs list endpoints | 1 | parallel with 001, 004 |
-| `003-store-and-api-client.md` | Frontend store + API client extension | 2 | after 001+002; blocks 005–011 |
-| `004-css-migration.md` | Replace styles.css with new token system | 1 | parallel with 001, 002 |
-| `005-delete-old-screens.md` | Delete Dashboard/Regions/Mixdown; rewrite App.tsx | 3 | after 003+004 |
-| `006-status-badge-and-header.md` | RehearsalHeader + StatusBadge components | 4 | parallel with 007–011 |
-| `007-transport-footer.md` | TransportFooter component | 4 | parallel with 006, 008–011 |
-| `008-playback-drawer.md` | PlaybackDrawer component | 4 | parallel with 006–007, 009–011 |
-| `009-hamburger-menu.md` | HamburgerMenu component | 4 | parallel with 006–008, 010–011 |
-| `010-bottom-sheets.md` | SongPickerSheet + RehearsalTypeSheet | 4 | parallel with 006–009, 011 |
-| `011-simple-song-view.md` | SimpleSongView component | 4 | parallel with 006–010 |
-| `012-integration-and-cleanup.md` | Integration, barrel exports, final cleanup | 5 | after all of wave 4 |
-
-## Dependency Graph
-
-```
-         ┌─ 001 ─┐
-Wave 1 ──┤        ├──► Wave 2: 003 ──► Wave 3: 005 ──► Wave 4: 006
-         └─ 002 ─┘                                              007
-         └─ 004 ─┘                                              008
-                                                                009
-                                                                010
-                                                                011
-                                                          └────────► Wave 5: 012
-```
-
-## Execution Notes
-
-- **TDD:** Every task in waves 1–4 has a TDD section. Write the failing tests FIRST, then implement.
-- **Test command (frontend):** `pnpm -F web test` (Vitest 2.x, jsdom, `web/tests/`)
-- **Test command (server):** Check `server/package.json` — task 001 establishes the server test runner
-- **Build verification:** `pnpm -F web build` must pass at end of task 012
-- **Preserved files:** `tasks/BUILD_PROGRESS.md` and `tasks/planning-questions.md` — do NOT delete these
-- **PRD reference:** `designs/2026-04-20/PRD-updated.md`
-- **Design prototype:** `designs/2026-04-20/Rehearsal Flow.html`, `designs/2026-04-20/app.jsx`, `designs/2026-04-20/components.jsx`
-
-## What NOT to implement
-
-- Mixdown or Regions features (Advanced menu stubs only)
-- Full multi-song persistence (song list MVP = single song from SongStore)
-- OSC events on rehearsal type change
-- Storybook stories for new rehearsal components
+1. Container file keeps its name (`<Name>.tsx`) and its public export symbol — `web/src/App.tsx` and the barrel `web/src/components/rehearsal/index.ts` must not need changes.
+2. Presentation file is `<Name>Presentation.tsx` in the same directory; it exports `<Name>Presentation` and has **no `useStore`, no `useEffect` for data, no direct `api` calls** — pure render + props.
+3. Story file is `<Name>Presentation.stories.tsx`, co-located. Follow the pattern in `web/src/screens/SongEditorPresentation.stories.tsx`:
+   - `const noop = () => {};`
+   - Fixture constants at top
+   - `const meta = { title: "Rehearsal/<Name>", component: <Name>Presentation, parameters: { layout: "fullscreen" }, args: { ...baseArgs } } satisfies Meta<typeof <Name>Presentation>;`
+   - Export multiple `Story`s as `args` overrides
+4. The container re-renders identically for users — same DOM, same behavior. Existing tests under `web/tests/` must keep passing without modification. If a test imports something from the presentation file (it shouldn't — tests import the container symbol), adjust only the import path.
+5. Storybook's `layout: "fullscreen"` works for most rehearsal components because they use `position: fixed`. When a component is an inline block, use default `layout: "padded"`.
+6. **Do not** remove any components, barrel exports, or orphan code in this build.
