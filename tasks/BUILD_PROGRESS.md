@@ -11,7 +11,7 @@
 
 ## Tasks
 - [x] task-01-status-badge — done
-- [ ] task-02-rehearsal-header — pending
+- [x] task-02-rehearsal-header — done
 - [ ] task-03-transport-footer — pending
 - [ ] task-04-playback-drawer — pending
 - [ ] task-05-hamburger-menu — pending
