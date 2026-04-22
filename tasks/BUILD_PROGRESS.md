@@ -16,7 +16,7 @@
 - [x] task-04-playback-drawer — done
 - [x] task-05-hamburger-menu — done
 - [x] task-06-rehearsal-type-sheet — done
-- [ ] task-07-song-picker-sheet — pending
+- [x] task-07-song-picker-sheet — done
 - [ ] task-08-simple-song-view — pending
 - [ ] task-09-icons-story — pending
 
