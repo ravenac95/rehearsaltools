@@ -39,7 +39,7 @@ export function PlaybackDrawerPresentation({
         zIndex: 150,
         transform: open ? "translateY(0)" : "translateY(calc(100% - 28px))",
         transition: "transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-        pointerEvents: (hasTakes || open) ? "auto" : "none",
+        pointerEvents: hasTakes ? "auto" : "none",
         opacity: hasTakes ? 1 : 0,
       }}
     >

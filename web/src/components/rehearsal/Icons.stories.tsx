@@ -1,8 +1,9 @@
+import type { CSSProperties } from "react";
 import type { Meta, StoryObj } from "@storybook/react";
 import { IconMic, IconStop, IconPlay, IconMetronome } from "./icons";
 
 function Showcase({ metronomeActive }: { metronomeActive: boolean }) {
-  const box: React.CSSProperties = {
+  const box: CSSProperties = {
     display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
     padding: 12, background: "var(--surface-alt)", borderRadius: 8,
     color: "var(--ink)", fontFamily: "var(--font-mono)", fontSize: 11,
