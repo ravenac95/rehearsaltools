@@ -10,7 +10,7 @@
 - TASK_REVIEW: approved (via ExitPlanMode)
 
 ## Tasks
-- [ ] task-01-status-badge — pending
+- [x] task-01-status-badge — done
 - [ ] task-02-rehearsal-header — pending
 - [ ] task-03-transport-footer — pending
 - [ ] task-04-playback-drawer — pending
