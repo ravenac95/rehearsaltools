@@ -17,7 +17,7 @@
 - [x] task-05-hamburger-menu — done
 - [x] task-06-rehearsal-type-sheet — done
 - [x] task-07-song-picker-sheet — done
-- [ ] task-08-simple-song-view — pending
+- [x] task-08-simple-song-view — done
 - [ ] task-09-icons-story — pending
 
 ## Notes
