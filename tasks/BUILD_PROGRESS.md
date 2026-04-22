@@ -15,7 +15,7 @@
 - [x] task-03-transport-footer — done
 - [x] task-04-playback-drawer — done
 - [x] task-05-hamburger-menu — done
-- [ ] task-06-rehearsal-type-sheet — pending
+- [x] task-06-rehearsal-type-sheet — done
 - [ ] task-07-song-picker-sheet — pending
 - [ ] task-08-simple-song-view — pending
 - [ ] task-09-icons-story — pending
