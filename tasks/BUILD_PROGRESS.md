@@ -12,7 +12,7 @@
 ## Tasks
 - [x] task-01-status-badge — done
 - [x] task-02-rehearsal-header — done
-- [ ] task-03-transport-footer — pending
+- [x] task-03-transport-footer — done
 - [ ] task-04-playback-drawer — pending
 - [ ] task-05-hamburger-menu — pending
 - [ ] task-06-rehearsal-type-sheet — pending
