@@ -13,3 +13,7 @@ data/rehearsaltools.json.tmp
 .vite/
 coverage/
 server/data
+
+# Rust
+target/
+.soundcloud_token.json
