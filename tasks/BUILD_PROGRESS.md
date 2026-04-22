@@ -18,7 +18,7 @@
 - [x] task-06-rehearsal-type-sheet — done
 - [x] task-07-song-picker-sheet — done
 - [x] task-08-simple-song-view — done
-- [ ] task-09-icons-story — pending
+- [x] task-09-icons-story — done
 
 ## Notes
 
